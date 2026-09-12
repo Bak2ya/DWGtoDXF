@@ -1,0 +1,345 @@
+@page "/"
+@inject CadConversionService Converter
+@inject IJSRuntime JS
+
+<PageTitle>DWG2DXF</PageTitle>
+
+<div class="window" data-theme="@(_darkMode ? "dark" : "light")">
+    <header class="topbar">
+        <div class="brand">
+            <img src="assets/app_logo.png" alt="DWG2DXF" />
+            <div>
+                <h1>DWG2DXF</h1>
+                <div class="engine-status"><span class="status-dot"></span>브라우저 로컬 변환 · ACadSharp 3.6.51</div>
+            </div>
+        </div>
+        <div class="menu-wrap">
+            <button class="text-button" @onclick="ToggleMenu">추가기능 <span>▾</span></button>
+            @if (_menuOpen)
+            {
+                <div class="menu-panel">
+                    <button @onclick="() => OpenDialog(DialogType.About)">프로그램 설명</button>
+                    <div class="menu-separator"></div>
+                    <button @onclick="ToggleDarkMode">다크 모드 <span class="menu-state">@(_darkMode ? "켜짐" : "꺼짐")</span></button>
+                    <div class="menu-separator"></div>
+                    <button @onclick="() => OpenDialog(DialogType.Font)">LibreCAD 글꼴 설치 안내</button>
+                </div>
+            }
+        </div>
+    </header>
+
+    <main>
+        <label class="drop-zone @(_dragActive ? "drag-active" : "")">
+            <InputFile OnChange="AddFiles" multiple accept=".dwg" class="file-input" />
+            <div class="drop-content">
+                <div class="drop-icon">＋</div>
+                <strong>DWG 파일을 여기에 놓거나 클릭해서 추가하세요</strong>
+                <span>파일은 서버로 전송되지 않고 이 브라우저에서만 처리됩니다.</span>
+            </div>
+        </label>
+
+        <section class="file-list" aria-label="DWG 파일 목록">
+            @if (_files.Count == 0)
+            {
+                <div class="empty-row">추가된 DWG 파일이 없습니다.</div>
+            }
+            else
+            {
+                @foreach (var file in _files)
+                {
+                    <div class="file-row @(file.ValidationError is null ? "" : "invalid")">
+                        <div class="file-main">
+                            <span class="file-name">@file.Name</span>
+                            <span class="file-meta">@FormatSize(file.Size) @(file.Header is null ? "" : $"· {file.Header}")</span>
+                        </div>
+                        <span class="file-status">@(file.ValidationError ?? file.Status)</span>
+                        <button class="icon-button" title="목록에서 삭제" @onclick="() => RemoveFile(file.Id)" disabled="@_isConverting">×</button>
+                    </div>
+                }
+            }
+        </section>
+
+        <div class="file-actions">
+            <label class="button secondary compact">
+                파일 추가
+                <InputFile OnChange="AddFiles" multiple accept=".dwg" class="file-input" />
+            </label>
+            <button class="button secondary compact" @onclick="RemoveInvalid" disabled="@(_isConverting || !_files.Any(f => f.ValidationError is not null))">오류 파일 삭제</button>
+            <button class="button secondary compact" @onclick="ClearFiles" disabled="@(_isConverting || _files.Count == 0)">전체 삭제</button>
+        </div>
+
+        <section class="options-grid">
+            <div class="option-row">
+                <div class="option-label">
+                    <strong>출력 DXF 버전</strong>
+                    <span>LibreCAD 호환성을 위해 2010 형식을 권장합니다.</span>
+                </div>
+                <select @bind="_options.OutputVersion" disabled="@_isConverting">
+                    <option value="@OutputVersionMode.AutoCad2010">AutoCAD 2010 DXF (권장)</option>
+                    <option value="@OutputVersionMode.KeepOriginal">원본 DWG 버전 유지</option>
+                </select>
+            </div>
+
+            <div class="option-row font-row">
+                <div class="option-label">
+                    <strong>글꼴 변환</strong>
+                    <span>LibreCAD에서 한글이 깨지는 도면은 전체 문자 변경이 가장 안정적입니다.</span>
+                </div>
+                <div class="radio-stack">
+                    <label><input type="radio" name="font" checked="@(_options.FontMode == FontMode.None)" @onchange="() => SetFontMode(FontMode.None)" disabled="@_isConverting" /> 변환 안 함</label>
+                    <label><input type="radio" name="font" checked="@(_options.FontMode == FontMode.All)" @onchange="() => SetFontMode(FontMode.All)" disabled="@_isConverting" /> 전체 문자 변경 <span class="recommend">권장</span></label>
+                    <label><input type="radio" name="font" checked="@(_options.FontMode == FontMode.KoreanOnly)" @onchange="() => SetFontMode(FontMode.KoreanOnly)" disabled="@_isConverting" /> 한글 포함 문자만 변경</label>
+                    @if (_options.FontMode == FontMode.KoreanOnly)
+                    {
+                        <div class="warning-text">※ 한글만 변경 시 일부 도면에서 오작동할 수 있습니다.</div>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <section class="convert-area">
+            <button class="button primary" @onclick="ConvertAll" disabled="@(_isConverting || !_files.Any(f => f.ValidationError is null))">
+                @(_isConverting ? "변환 중..." : "DXF 변환")
+            </button>
+            <div class="progress-track"><div class="progress-bar" style="width:@_progress%"></div></div>
+            <span class="progress-label">@_progress%</span>
+        </section>
+
+        <section class="log-box">
+            @if (_logs.Count == 0)
+            {
+                <div class="log-muted">변환 로그가 여기에 표시됩니다.</div>
+            }
+            else
+            {
+                @foreach (var log in _logs)
+                {
+                    <div>@log</div>
+                }
+            }
+        </section>
+
+        @if (_results.Count > 0)
+        {
+            <section class="results">
+                <div class="results-head">
+                    <strong>변환 결과</strong>
+                    <button class="button secondary compact" @onclick="DownloadAll">전체 ZIP 다운로드</button>
+                </div>
+                @foreach (var result in _results)
+                {
+                    <div class="result-row">
+                        <div>
+                            <div class="result-name">@(result.NeedsReview ? "⚠" : "✓") @result.OutputName</div>
+                            <div class="result-meta">
+                                @if (result.NeedsReview)
+                                {
+                                    <span>확인 필요 · @string.Join(", ", result.Differences)</span>
+                                }
+                                else
+                                {
+                                    <span>변환/재읽기 검증 통과 · 객체 @result.After.Total · 레이어 @result.After.Layers · 문자 @result.After.Text</span>
+                                }
+                            </div>
+                        </div>
+                        <button class="button secondary compact" @onclick="() => DownloadResult(result)">DXF 다운로드</button>
+                    </div>
+                }
+            </section>
+        }
+
+        <footer>
+            <span>원본 DWG는 수정하지 않습니다.</span>
+            <span>·</span>
+            <span>결과 파일은 브라우저 다운로드로만 저장됩니다.</span>
+        </footer>
+    </main>
+
+    @if (_dialog != DialogType.None)
+    {
+        <div class="modal-backdrop" @onclick="CloseDialog">
+            <div class="modal" @onclick:stopPropagation="true">
+                <button class="modal-close" @onclick="CloseDialog">×</button>
+                @if (_dialog == DialogType.About)
+                {
+                    <h2>DWG2DXF Web</h2>
+                    <p>AutoCAD를 업무용으로 사용하기 어려운 환경에서 외부 업체의 DWG를 DXF로 변환해 LibreCAD에서 확인·수정하기 위한 작은 전처리 도구입니다.</p>
+                    <h3>사용 순서</h3>
+                    <ol>
+                        <li>DWG 파일을 추가합니다.</li>
+                        <li>DXF 버전과 글꼴 변환 방식을 선택합니다.</li>
+                        <li><b>DXF 변환</b>을 누릅니다.</li>
+                        <li>재읽기 검증 결과를 확인하고 DXF를 다운로드합니다.</li>
+                        <li>LibreCAD에서 결과 도면을 열어 실제 형상을 최종 확인합니다.</li>
+                    </ol>
+                    <div class="notice-box">이 도구는 CAD 편집기가 아닙니다. Proxy/AEC/Civil 등 특수 객체는 완벽한 변환을 보장하지 않으며, 객체 수 검증도 수학적 동일성을 증명하는 기능은 아닙니다.</div>
+                    <p class="small">Web v0.1 · ACadSharp 3.6.51</p>
+                }
+                else if (_dialog == DialogType.Font)
+                {
+                    <h2>LibreCAD 글꼴 설치 안내</h2>
+                    <p>브라우저는 보안상 LibreCAD 설치 폴더를 직접 열 수 없습니다. 아래 글꼴 파일을 받은 뒤 LibreCAD 글꼴 폴더에 직접 복사하세요.</p>
+                    <a class="button primary inline" href="assets/wqy-unicode.lff" download="wqy-unicode.lff">wqy-unicode.lff 다운로드</a>
+                    <h3>Windows 기준</h3>
+                    <ol>
+                        <li>LibreCAD에서 <b>옵션 → 응용프로그램 설정 → 경로 → 글꼴</b>을 확인합니다.</li>
+                        <li>다운로드한 <code>wqy-unicode.lff</code>를 해당 폴더로 복사합니다.</li>
+                        <li>LibreCAD를 완전히 종료합니다.</li>
+                        <li>LibreCAD를 다시 실행합니다.</li>
+                    </ol>
+                    <p class="small">일반적인 위치: <code>C:\Program Files\LibreCAD\resources\fonts</code> 또는 <code>C:\Program Files\LibreCAD\share\librecad\fonts</code></p>
+                    <div class="notice-box">글꼴 라이선스: Apache License 2.0 또는 GPLv3. 이 프로젝트에서는 Apache License 2.0 조건으로 재배포합니다.</div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private readonly List<QueuedDwgFile> _files = [];
+    private readonly List<ConversionResult> _results = [];
+    private readonly List<string> _logs = [];
+    private readonly ConversionOptions _options = new();
+    private bool _isConverting;
+    private bool _menuOpen;
+    private bool _darkMode;
+    private bool _dragActive;
+    private int _progress;
+    private DialogType _dialog;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _darkMode = await JS.InvokeAsync<bool>("dwg2dxf.getDarkMode");
+        StateHasChanged();
+    }
+
+    private async Task AddFiles(InputFileChangeEventArgs e)
+    {
+        foreach (var browserFile in e.GetMultipleFiles(100))
+        {
+            if (_files.Any(f => f.Name.Equals(browserFile.Name, StringComparison.OrdinalIgnoreCase) && f.Size == browserFile.Size))
+                continue;
+
+            var item = new QueuedDwgFile
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Name = browserFile.Name,
+                Size = browserFile.Size,
+                BrowserFile = browserFile,
+                Status = "검사 중"
+            };
+            _files.Add(item);
+            StateHasChanged();
+
+            try
+            {
+                var check = await Converter.ValidateBrowserFileAsync(browserFile);
+                item.Header = check.Header;
+                item.ValidationError = check.Error;
+                item.Status = check.Error is null ? "준비" : "오류";
+            }
+            catch (Exception ex)
+            {
+                item.ValidationError = $"파일 확인 실패: {ex.Message}";
+                item.Status = "오류";
+            }
+        }
+    }
+
+    private async Task ConvertAll()
+    {
+        var targets = _files.Where(f => f.ValidationError is null).ToList();
+        if (targets.Count == 0) return;
+
+        _isConverting = true;
+        _progress = 0;
+        _results.Clear();
+        _logs.Clear();
+        AddLog("변환을 시작합니다. 모든 처리는 이 브라우저 안에서 진행됩니다.");
+
+        for (var i = 0; i < targets.Count; i++)
+        {
+            var file = targets[i];
+            file.Status = "변환 중";
+            AddLog($"[{i + 1}/{targets.Count}] {file.Name}");
+            StateHasChanged();
+            await Task.Yield();
+
+            try
+            {
+                var result = await Converter.ConvertAsync(file.BrowserFile, _options, message => AddLog("  " + message));
+                _results.Add(result);
+                file.Status = result.NeedsReview ? "확인 필요" : "완료";
+                AddLog(result.NeedsReview
+                    ? $"  ! 변환 완료, 확인 필요: {result.OutputName} · {string.Join(", ", result.Differences)}"
+                    : $"  ✓ 변환/재읽기 검증 통과: {result.OutputName} (객체 {result.After.Total}, 레이어 {result.After.Layers}, 문자 {result.After.Text})");
+            }
+            catch (Exception ex)
+            {
+                file.Status = "실패";
+                AddLog($"  ✕ 변환 실패: {ex.Message}");
+            }
+
+            _progress = (int)Math.Round((i + 1) * 100d / targets.Count);
+            StateHasChanged();
+        }
+
+        AddLog($"완료 · 정상 {_results.Count(r => !r.NeedsReview)} · 확인 필요 {_results.Count(r => r.NeedsReview)} · 실패 {targets.Count - _results.Count}");
+        _isConverting = false;
+    }
+
+    private void AddLog(string text)
+    {
+        _logs.Add(text);
+        if (_logs.Count > 250) _logs.RemoveAt(0);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task DownloadResult(ConversionResult result)
+    {
+        using var stream = new MemoryStream(result.DxfBytes, writable: false);
+        using var reference = new DotNetStreamReference(stream);
+        await JS.InvokeVoidAsync("dwg2dxf.downloadStream", result.OutputName, reference);
+    }
+
+    private async Task DownloadAll()
+    {
+        if (_results.Count == 0) return;
+        var bytes = CadConversionService.CreateZip(_results);
+        using var stream = new MemoryStream(bytes, writable: false);
+        using var reference = new DotNetStreamReference(stream);
+        await JS.InvokeVoidAsync("dwg2dxf.downloadStream", "DWG2DXF_변환결과.zip", reference);
+    }
+
+    private void RemoveFile(string id)
+    {
+        _files.RemoveAll(f => f.Id == id);
+        _results.Clear();
+        _progress = 0;
+    }
+
+    private void RemoveInvalid() => _files.RemoveAll(f => f.ValidationError is not null);
+    private void ClearFiles() { _files.Clear(); _results.Clear(); _logs.Clear(); _progress = 0; }
+    private void SetFontMode(FontMode mode) => _options.FontMode = mode;
+    private void ToggleMenu() => _menuOpen = !_menuOpen;
+    private void OpenDialog(DialogType type) { _dialog = type; _menuOpen = false; }
+    private void CloseDialog() => _dialog = DialogType.None;
+
+    private async Task ToggleDarkMode()
+    {
+        _darkMode = !_darkMode;
+        _menuOpen = false;
+        await JS.InvokeVoidAsync("dwg2dxf.setDarkMode", _darkMode);
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes >= 1024L * 1024 * 1024) return $"{bytes / (1024d * 1024 * 1024):0.##} GB";
+        if (bytes >= 1024L * 1024) return $"{bytes / (1024d * 1024):0.##} MB";
+        if (bytes >= 1024) return $"{bytes / 1024d:0.##} KB";
+        return $"{bytes} B";
+    }
+
+    private enum DialogType { None, About, Font }
+}
