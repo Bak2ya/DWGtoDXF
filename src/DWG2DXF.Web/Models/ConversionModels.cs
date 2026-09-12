@@ -4,7 +4,7 @@ public enum FontMode
 {
     None,
     All,
-    KoreanOnly
+    CjkOnly
 }
 
 public enum OutputVersionMode
@@ -13,15 +13,22 @@ public enum OutputVersionMode
     KeepOriginal
 }
 
+public sealed record FileValidationResult(
+    string? Header,
+    string? ErrorKey = null,
+    object[]? ErrorArgs = null);
+
 public sealed class QueuedDwgFile
 {
     public required string Id { get; init; }
     public required string Name { get; init; }
     public required long Size { get; init; }
     public required Microsoft.AspNetCore.Components.Forms.IBrowserFile BrowserFile { get; init; }
-    public string? ValidationError { get; set; }
+
+    public string? ValidationErrorKey { get; set; }
+    public object[] ValidationErrorArgs { get; set; } = Array.Empty<object>();
     public string? Header { get; set; }
-    public string Status { get; set; } = "대기";
+    public string StatusKey { get; set; } = "status.waiting";
 }
 
 public sealed class ConversionOptions
@@ -53,7 +60,10 @@ public sealed record FontApplyResult(
     public int TotalApplied => TextEntities + Attributes + DimensionStyles;
 }
 
-public sealed record FontUsageResult(bool StyleExists, int TextEntities, int DimensionStyles);
+public sealed record FontUsageResult(
+    bool StyleExists,
+    int TextEntities,
+    int DimensionStyles);
 
 public sealed class ConversionResult
 {

@@ -10,6 +10,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
+builder.Services.AddScoped<LocalizationService>();
 builder.Services.AddScoped<CadConversionService>();
 
 await builder.Build().RunAsync();

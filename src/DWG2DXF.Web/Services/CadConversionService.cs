@@ -12,35 +12,57 @@ namespace DWG2DXF.Web.Services;
 public sealed class CadConversionService
 {
     public const long DefaultMaxFileSize = 256L * 1024 * 1024;
-    private static readonly Regex HangulRegex = new("[\\u1100-\\u11FF\\u3130-\\u318F\\uA960-\\uA97F\\uAC00-\\uD7AF\\uD7B0-\\uD7FF]", RegexOptions.Compiled);
 
-    public async Task<(string? Header, string? Error)> ValidateBrowserFileAsync(
+    // Common CJK ranges used in Korean/Japanese/Chinese CAD text.
+    // Supplementary-plane CJK extensions are intentionally outside this conservative BMP matcher.
+    private static readonly Regex CjkRegex = new(
+        "[\\u1100-\\u11FF\\u3130-\\u318F\\uA960-\\uA97F\\uAC00-\\uD7AF\\uD7B0-\\uD7FF" +
+        "\\u3040-\\u309F\\u30A0-\\u30FF\\u31F0-\\u31FF\\u3400-\\u4DBF\\u4E00-\\u9FFF" +
+        "\\uF900-\\uFAFF\\uFF65-\\uFF9F]",
+        RegexOptions.Compiled);
+
+    private readonly LocalizationService _l;
+
+    public CadConversionService(LocalizationService localization)
+    {
+        _l = localization;
+    }
+
+    public async Task<FileValidationResult> ValidateBrowserFileAsync(
         Microsoft.AspNetCore.Components.Forms.IBrowserFile file,
         CancellationToken cancellationToken = default)
     {
         if (!file.Name.EndsWith(".dwg", StringComparison.OrdinalIgnoreCase))
-            return (null, "DWG 파일만 추가할 수 있습니다.");
+            return new FileValidationResult(null, "validation.notDwg");
 
         if (file.Size < 6)
-            return (null, "DWG 파일 헤더가 올바르지 않습니다.");
+            return new FileValidationResult(null, "validation.invalidHeader");
 
         if (file.Size > DefaultMaxFileSize)
-            return (null, $"현재 웹 버전의 단일 파일 제한은 {DefaultMaxFileSize / 1024 / 1024} MB입니다.");
+            return new FileValidationResult(
+                null,
+                "validation.tooLarge",
+                new object[] { DefaultMaxFileSize / 1024 / 1024 });
 
         await using var stream = file.OpenReadStream(DefaultMaxFileSize, cancellationToken);
         var buffer = new byte[6];
         var read = await stream.ReadAsync(buffer.AsMemory(0, 6), cancellationToken);
+
         if (read < 6)
-            return (null, "DWG 파일 헤더가 올바르지 않습니다.");
+            return new FileValidationResult(null, "validation.invalidHeader");
 
         var header = Encoding.ASCII.GetString(buffer);
+
         if (!Regex.IsMatch(header, "^AC10[0-9]{2}$"))
-            return (header, "DWG 형식으로 인식할 수 없습니다.");
+            return new FileValidationResult(header, "validation.unrecognized");
 
         if (header is "AC1009" or "AC1012")
-            return (header, $"현재 변환 엔진에서 지원하지 않는 오래된 DWG 버전입니다. ({header})");
+            return new FileValidationResult(
+                header,
+                "validation.oldVersion",
+                new object[] { header });
 
-        return (header, null);
+        return new FileValidationResult(header);
     }
 
     public async Task<ConversionResult> ConvertAsync(
@@ -50,8 +72,8 @@ public sealed class CadConversionService
         Action<int, string>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        progress?.Invoke(3, "DWG 불러오는 중");
-        log?.Invoke($"{file.Name} 읽는 중...");
+        progress?.Invoke(3, "progress.loading");
+        log?.Invoke(_l.T("log.reading", file.Name));
         await Task.Delay(16, cancellationToken);
 
         await using var browserStream = file.OpenReadStream(DefaultMaxFileSize, cancellationToken);
@@ -59,57 +81,66 @@ public sealed class CadConversionService
         await browserStream.CopyToAsync(input, cancellationToken);
         input.Position = 0;
 
-        progress?.Invoke(18, "DWG 구조 분석 중");
-        log?.Invoke("DWG 구조 분석 중...");
+        progress?.Invoke(18, "progress.analyzing");
+        log?.Invoke(_l.Get("log.analyzing"));
         await Task.Delay(16, cancellationToken);
 
         CadDocument doc;
         using (var reader = new DwgReader(input))
         {
-            doc = reader.Read() ?? throw new InvalidOperationException("DWG 문서를 읽지 못했습니다.");
+            doc = reader.Read() ?? throw new InvalidOperationException(_l.Get("error.readDwg"));
         }
 
-        progress?.Invoke(48, "객체 정보 확인 중");
+        progress?.Invoke(48, "progress.inspecting");
         await Task.Delay(16, cancellationToken);
 
         var before = GetDocStats(doc);
 
-        progress?.Invoke(55, "출력 설정 적용 중");
+        progress?.Invoke(55, "progress.output");
         await Task.Delay(16, cancellationToken);
 
         if (options.OutputVersion == OutputVersionMode.AutoCad2010)
         {
             doc.Header.Version = ACadVersion.AC1024;
-            log?.Invoke("출력 버전: AutoCAD 2010 DXF (AC1024)");
+            log?.Invoke(_l.Get("log.output2010"));
         }
         else
         {
-            log?.Invoke($"출력 버전: 원본 유지 ({doc.Header.Version})");
+            log?.Invoke(_l.T("log.outputOriginal", doc.Header.Version));
         }
 
-        progress?.Invoke(62, options.FontMode == FontMode.None ? "글꼴 설정 확인 중" : "글꼴 변환 중");
+        progress?.Invoke(
+            62,
+            options.FontMode == FontMode.None ? "progress.fontCheck" : "progress.fontConvert");
         await Task.Delay(16, cancellationToken);
 
         FontApplyResult? fontResult = null;
+
         switch (options.FontMode)
         {
             case FontMode.All:
                 fontResult = SetWqyUnicodeStyle(doc, FontMode.All);
-                log?.Invoke($"글꼴: 전체 문자 wqy-unicode 적용 (문자 {fontResult.TextEntities}, 속성 {fontResult.Attributes}, 치수스타일 {fontResult.DimensionStyles})");
+                log?.Invoke(_l.T(
+                    "log.fontAll",
+                    fontResult.TextEntities,
+                    fontResult.Attributes,
+                    fontResult.DimensionStyles));
                 break;
-            case FontMode.KoreanOnly:
-                fontResult = SetWqyUnicodeStyle(doc, FontMode.KoreanOnly);
+
+            case FontMode.CjkOnly:
+                fontResult = SetWqyUnicodeStyle(doc, FontMode.CjkOnly);
                 log?.Invoke(fontResult.TotalApplied > 0
-                    ? $"글꼴: 한글 포함 문자만 wqy-unicode 적용 (문자 {fontResult.TextEntities}, 속성 {fontResult.Attributes})"
-                    : "글꼴: 한글 포함 문자를 찾지 못해 원본 문자 스타일을 유지했습니다.");
+                    ? _l.T("log.fontCjk", fontResult.TextEntities, fontResult.Attributes)
+                    : _l.Get("log.fontCjkNone"));
                 break;
+
             default:
-                log?.Invoke("글꼴: 변환하지 않음 (원본 문자 스타일 유지)");
+                log?.Invoke(_l.Get("log.fontNone"));
                 break;
         }
 
-        progress?.Invoke(75, "DXF 생성 중");
-        log?.Invoke("DXF 생성 중...");
+        progress?.Invoke(75, "progress.generating");
+        log?.Invoke(_l.Get("log.generating"));
         await Task.Delay(16, cancellationToken);
 
         byte[] dxfBytes;
@@ -117,13 +148,14 @@ public sealed class CadConversionService
         using (var output = new MemoryStream())
         {
             var writer = new DxfWriter(output, doc, binary: false);
-            // ACadSharp의 DxfWriter.Dispose()는 내부 StreamWriter와 원본 스트림을 닫습니다.
-            // 따라서 Write()가 Flush()를 끝낸 직후 바이트를 먼저 복사한 다음 writer를 Dispose합니다.
             writer.Configuration.CloseStream = false;
 
             try
             {
                 writer.Write();
+
+                // DxfWriter.Dispose() closes the underlying stream in ACadSharp 3.6.51.
+                // Copy the bytes before disposing the writer.
                 dxfBytes = output.ToArray();
             }
             finally
@@ -133,40 +165,47 @@ public sealed class CadConversionService
         }
 
         if (dxfBytes.Length <= 0)
-            throw new InvalidOperationException("DXF 파일이 생성되지 않았습니다.");
+            throw new InvalidOperationException(_l.Get("error.emptyDxf"));
 
-        log?.Invoke($"DXF 생성 완료: {dxfBytes.Length:N0} bytes · 재읽기 검증 중...");
-        progress?.Invoke(88, "DXF 재읽기 검증 중");
+        log?.Invoke(_l.T("log.generated", dxfBytes.Length));
+        progress?.Invoke(88, "progress.verifying");
         await Task.Delay(16, cancellationToken);
 
         using var verifyStream = new MemoryStream(dxfBytes, writable: false);
+
         CadDocument dxfDoc;
         using (var dxfReader = new DxfReader(verifyStream))
         {
-            dxfDoc = dxfReader.Read() ?? throw new InvalidOperationException("생성된 DXF를 다시 읽어 검증하지 못했습니다.");
+            dxfDoc = dxfReader.Read() ?? throw new InvalidOperationException(_l.Get("error.verifyDxf"));
         }
 
-        progress?.Invoke(95, "검증 결과 정리 중");
+        progress?.Invoke(95, "progress.summarizing");
         await Task.Delay(16, cancellationToken);
 
         var after = GetDocStats(dxfDoc);
         var diffs = CompareStats(before, after);
 
         FontUsageResult? fontUsage = null;
+
         if (options.FontMode != FontMode.None && fontResult is { TotalApplied: > 0 })
         {
             fontUsage = GetWqyUnicodeUsage(dxfDoc);
+
             if (!fontUsage.StyleExists)
-                diffs.Add("wqy-unicode 스타일이 DXF에 저장되지 않음");
+                diffs.Add(_l.Get("difference.fontStyleMissing"));
             else if (fontUsage.TextEntities == 0 && fontUsage.DimensionStyles == 0)
-                diffs.Add("wqy-unicode 문자 스타일 적용 0건");
+                diffs.Add(_l.Get("difference.fontUsageZero"));
             else
-                log?.Invoke($"글꼴 재검증: wqy-unicode 스타일 정상 (문자 {fontUsage.TextEntities}, 치수스타일 {fontUsage.DimensionStyles})");
+                log?.Invoke(_l.T(
+                    "log.fontVerified",
+                    fontUsage.TextEntities,
+                    fontUsage.DimensionStyles));
         }
 
-        progress?.Invoke(100, "변환 완료");
+        progress?.Invoke(100, "progress.done");
 
         var baseName = Path.GetFileNameWithoutExtension(file.Name);
+
         return new ConversionResult
         {
             SourceName = file.Name,
@@ -184,51 +223,80 @@ public sealed class CadConversionService
     public static byte[] CreateZip(IReadOnlyCollection<ConversionResult> results)
     {
         using var zipStream = new MemoryStream();
-        using (var archive = new System.IO.Compression.ZipArchive(zipStream, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+
+        using (var archive = new System.IO.Compression.ZipArchive(
+            zipStream,
+            System.IO.Compression.ZipArchiveMode.Create,
+            leaveOpen: true))
         {
             var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             foreach (var result in results)
             {
                 var name = GetUniqueName(result.OutputName, usedNames);
-                var entry = archive.CreateEntry(name, System.IO.Compression.CompressionLevel.Fastest);
+                var entry = archive.CreateEntry(
+                    name,
+                    System.IO.Compression.CompressionLevel.Fastest);
+
                 using var entryStream = entry.Open();
                 entryStream.Write(result.DxfBytes, 0, result.DxfBytes.Length);
             }
         }
+
         return zipStream.ToArray();
     }
 
     private static string GetUniqueName(string fileName, HashSet<string> used)
     {
-        if (used.Add(fileName)) return fileName;
+        if (used.Add(fileName))
+            return fileName;
+
         var stem = Path.GetFileNameWithoutExtension(fileName);
         var ext = Path.GetExtension(fileName);
+
         for (var i = 2; ; i++)
         {
-            var candidate = $"{stem}_변환_{i}{ext}";
-            if (used.Add(candidate)) return candidate;
+            var candidate = $"{stem}_converted_{i}{ext}";
+            if (used.Add(candidate))
+                return candidate;
         }
     }
 
     public static CadStats GetDocStats(CadDocument doc)
     {
-        var total = 0; var line = 0; var polyline = 0; var arc = 0; var circle = 0;
-        var insert = 0; var text = 0; var dimension = 0; var hatch = 0; var other = 0;
+        var total = 0;
+        var line = 0;
+        var polyline = 0;
+        var arc = 0;
+        var circle = 0;
+        var insert = 0;
+        var text = 0;
+        var dimension = 0;
+        var hatch = 0;
+        var other = 0;
 
         IEnumerable entities = doc.Entities;
+
         try
         {
             var blocks = doc.BlockRecords.Cast<object>().ToList();
             if (blocks.Count > 0)
                 entities = blocks.SelectMany(GetEntitiesFromBlock).ToList();
         }
-        catch { }
+        catch
+        {
+            // Fall back to document entities if block traversal is unavailable.
+        }
 
         foreach (var entity in entities)
         {
-            if (entity is null) continue;
+            if (entity is null)
+                continue;
+
             total++;
+
             var name = entity.GetType().Name;
+
             if (name == "Line") line++;
             else if (name.Contains("Polyline", StringComparison.OrdinalIgnoreCase)) polyline++;
             else if (name == "Arc") arc++;
@@ -240,21 +308,41 @@ public sealed class CadConversionService
             else other++;
         }
 
-        return new CadStats(total, line, polyline, arc, circle, insert, text, dimension, hatch, other,
-            doc.Layers?.Count ?? 0, doc.BlockRecords?.Count ?? 0);
+        return new CadStats(
+            total,
+            line,
+            polyline,
+            arc,
+            circle,
+            insert,
+            text,
+            dimension,
+            hatch,
+            other,
+            doc.Layers?.Count ?? 0,
+            doc.BlockRecords?.Count ?? 0);
     }
 
     private static IEnumerable<object> GetEntitiesFromBlock(object blockRecord)
     {
-        var prop = blockRecord.GetType().GetProperty("Entities", BindingFlags.Public | BindingFlags.Instance);
-        if (prop?.GetValue(blockRecord) is not IEnumerable items) yield break;
+        var prop = blockRecord.GetType().GetProperty(
+            "Entities",
+            BindingFlags.Public | BindingFlags.Instance);
+
+        if (prop?.GetValue(blockRecord) is not IEnumerable items)
+            yield break;
+
         foreach (var item in items)
-            if (item is not null) yield return item;
+        {
+            if (item is not null)
+                yield return item;
+        }
     }
 
     public static List<string> CompareStats(CadStats before, CadStats after)
     {
         var diffs = new List<string>();
+
         Compare("Total", before.Total, after.Total);
         Compare("Line", before.Line, after.Line);
         Compare("Polyline", before.Polyline, after.Polyline);
@@ -262,17 +350,20 @@ public sealed class CadConversionService
         Compare("Circle", before.Circle, after.Circle);
         Compare("Insert", before.Insert, after.Insert);
         Compare("Text", before.Text, after.Text);
+
         return diffs;
 
         void Compare(string name, int a, int b)
         {
-            if (a != b) diffs.Add($"{name} {a} -> {b}");
+            if (a != b)
+                diffs.Add($"{name} {a} -> {b}");
         }
     }
 
     private static TextStyle GetWqyUnicodeStyle(CadDocument doc)
     {
         TextStyle style;
+
         if (doc.TextStyles.Contains("wqy-unicode"))
             style = doc.TextStyles["wqy-unicode"];
         else
@@ -280,87 +371,158 @@ public sealed class CadConversionService
 
         style.Filename = "wqy-unicode.lff";
         style.BigFontFilename = string.Empty;
+
         return style;
     }
 
-    private static bool ContainsHangul(string? text) => !string.IsNullOrEmpty(text) && HangulRegex.IsMatch(text);
+    private static bool ContainsCjk(string? text) =>
+        !string.IsNullOrEmpty(text) && CjkRegex.IsMatch(text);
 
     private static string GetCadTextValue(object? entity)
     {
-        if (entity is null) return string.Empty;
+        if (entity is null)
+            return string.Empty;
+
         try
         {
-            var p = entity.GetType().GetProperty("Value", BindingFlags.Public | BindingFlags.Instance);
-            return p?.GetValue(entity)?.ToString() ?? string.Empty;
+            var property = entity.GetType().GetProperty(
+                "Value",
+                BindingFlags.Public | BindingFlags.Instance);
+
+            return property?.GetValue(entity)?.ToString() ?? string.Empty;
         }
-        catch { return string.Empty; }
+        catch
+        {
+            return string.Empty;
+        }
     }
 
-    private static bool EntityContainsHangul(object? entity)
+    private static bool EntityContainsCjk(object? entity)
     {
-        if (entity is null) return false;
-        if (ContainsHangul(GetCadTextValue(entity))) return true;
+        if (entity is null)
+            return false;
+
+        if (ContainsCjk(GetCadTextValue(entity)))
+            return true;
+
         try
         {
-            var mtext = entity.GetType().GetProperty("MText", BindingFlags.Public | BindingFlags.Instance)?.GetValue(entity);
-            return mtext is not null && ContainsHangul(GetCadTextValue(mtext));
+            var mtext = entity.GetType()
+                .GetProperty("MText", BindingFlags.Public | BindingFlags.Instance)
+                ?.GetValue(entity);
+
+            return mtext is not null && ContainsCjk(GetCadTextValue(mtext));
         }
-        catch { return false; }
+        catch
+        {
+            return false;
+        }
     }
 
     private static FontApplyResult SetWqyUnicodeStyle(CadDocument doc, FontMode mode)
     {
-        var koreanOnly = mode == FontMode.KoreanOnly;
+        var cjkOnly = mode == FontMode.CjkOnly;
+
         TextStyle? wqy = null;
         var textCount = 0;
         var attributeCount = 0;
         var dimensionStyleCount = 0;
 
         IEnumerable<object> entities;
-        try { entities = doc.BlockRecords.Cast<object>().SelectMany(GetEntitiesFromBlock).ToList(); }
-        catch { entities = doc.Entities.Cast<object>().ToList(); }
+
+        try
+        {
+            entities = doc.BlockRecords
+                .Cast<object>()
+                .SelectMany(GetEntitiesFromBlock)
+                .ToList();
+        }
+        catch
+        {
+            entities = doc.Entities.Cast<object>().ToList();
+        }
 
         foreach (var entity in entities)
         {
-            var shouldApply = !koreanOnly || EntityContainsHangul(entity);
-            if (shouldApply && TrySetTextStyle(entity, ref wqy, doc)) textCount++;
+            var shouldApply = !cjkOnly || EntityContainsCjk(entity);
 
-            var attrs = entity.GetType().GetProperty("Attributes", BindingFlags.Public | BindingFlags.Instance)?.GetValue(entity) as IEnumerable;
-            if (attrs is null) continue;
+            if (shouldApply && TrySetTextStyle(entity, ref wqy, doc))
+                textCount++;
+
+            var attrs = entity.GetType()
+                .GetProperty("Attributes", BindingFlags.Public | BindingFlags.Instance)
+                ?.GetValue(entity) as IEnumerable;
+
+            if (attrs is null)
+                continue;
+
             foreach (var attr in attrs)
             {
-                if (attr is null) continue;
-                var attrHasHangul = EntityContainsHangul(attr);
-                if ((!koreanOnly || attrHasHangul) && TrySetTextStyle(attr, ref wqy, doc)) attributeCount++;
+                if (attr is null)
+                    continue;
 
-                var mtext = attr.GetType().GetProperty("MText", BindingFlags.Public | BindingFlags.Instance)?.GetValue(attr);
-                if (mtext is not null && (!koreanOnly || ContainsHangul(GetCadTextValue(mtext))) && TrySetTextStyle(mtext, ref wqy, doc))
+                var attrHasCjk = EntityContainsCjk(attr);
+
+                if ((!cjkOnly || attrHasCjk) && TrySetTextStyle(attr, ref wqy, doc))
                     attributeCount++;
+
+                var mtext = attr.GetType()
+                    .GetProperty("MText", BindingFlags.Public | BindingFlags.Instance)
+                    ?.GetValue(attr);
+
+                if (mtext is not null &&
+                    (!cjkOnly || ContainsCjk(GetCadTextValue(mtext))) &&
+                    TrySetTextStyle(mtext, ref wqy, doc))
+                {
+                    attributeCount++;
+                }
             }
         }
 
-        if (!koreanOnly)
+        // In CJK-only mode, shared DimensionStyle objects are intentionally left unchanged.
+        // Changing a shared dimension style could alter numeric/Latin-only dimensions.
+        if (!cjkOnly)
         {
             foreach (var dimStyle in doc.DimensionStyles.Cast<object>())
             {
-                if (TrySetTextStyle(dimStyle, ref wqy, doc)) dimensionStyleCount++;
+                if (TrySetTextStyle(dimStyle, ref wqy, doc))
+                    dimensionStyleCount++;
             }
         }
 
-        return new FontApplyResult(textCount, attributeCount, dimensionStyleCount, mode);
+        return new FontApplyResult(
+            textCount,
+            attributeCount,
+            dimensionStyleCount,
+            mode);
     }
 
-    private static bool TrySetTextStyle(object target, ref TextStyle? wqy, CadDocument doc)
+    private static bool TrySetTextStyle(
+        object target,
+        ref TextStyle? wqy,
+        CadDocument doc)
     {
         try
         {
-            var prop = target.GetType().GetProperty("Style", BindingFlags.Public | BindingFlags.Instance);
-            if (prop is null || !prop.CanWrite || !typeof(TextStyle).IsAssignableFrom(prop.PropertyType)) return false;
+            var prop = target.GetType().GetProperty(
+                "Style",
+                BindingFlags.Public | BindingFlags.Instance);
+
+            if (prop is null ||
+                !prop.CanWrite ||
+                !typeof(TextStyle).IsAssignableFrom(prop.PropertyType))
+            {
+                return false;
+            }
+
             wqy ??= GetWqyUnicodeStyle(doc);
             prop.SetValue(target, wqy);
             return true;
         }
-        catch { return false; }
+        catch
+        {
+            return false;
+        }
     }
 
     private static FontUsageResult GetWqyUnicodeUsage(CadDocument doc)
@@ -370,31 +532,64 @@ public sealed class CadConversionService
         var dimensionStyleCount = 0;
 
         IEnumerable<object> entities;
-        try { entities = doc.BlockRecords.Cast<object>().SelectMany(GetEntitiesFromBlock).ToList(); }
-        catch { entities = doc.Entities.Cast<object>().ToList(); }
+
+        try
+        {
+            entities = doc.BlockRecords
+                .Cast<object>()
+                .SelectMany(GetEntitiesFromBlock)
+                .ToList();
+        }
+        catch
+        {
+            entities = doc.Entities.Cast<object>().ToList();
+        }
 
         foreach (var entity in entities)
         {
-            if (UsesWqyStyle(entity)) textCount++;
-            var attrs = entity.GetType().GetProperty("Attributes", BindingFlags.Public | BindingFlags.Instance)?.GetValue(entity) as IEnumerable;
-            if (attrs is null) continue;
+            if (UsesWqyStyle(entity))
+                textCount++;
+
+            var attrs = entity.GetType()
+                .GetProperty("Attributes", BindingFlags.Public | BindingFlags.Instance)
+                ?.GetValue(entity) as IEnumerable;
+
+            if (attrs is null)
+                continue;
+
             foreach (var attr in attrs)
-                if (attr is not null && UsesWqyStyle(attr)) textCount++;
+            {
+                if (attr is not null && UsesWqyStyle(attr))
+                    textCount++;
+            }
         }
 
         foreach (var dimStyle in doc.DimensionStyles.Cast<object>())
-            if (UsesWqyStyle(dimStyle)) dimensionStyleCount++;
+        {
+            if (UsesWqyStyle(dimStyle))
+                dimensionStyleCount++;
+        }
 
-        return new FontUsageResult(styleExists, textCount, dimensionStyleCount);
+        return new FontUsageResult(
+            styleExists,
+            textCount,
+            dimensionStyleCount);
     }
 
     private static bool UsesWqyStyle(object target)
     {
         try
         {
-            var prop = target.GetType().GetProperty("Style", BindingFlags.Public | BindingFlags.Instance);
-            return prop?.GetValue(target) is TextStyle style && style.Name == "wqy-unicode";
+            var prop = target.GetType().GetProperty(
+                "Style",
+                BindingFlags.Public | BindingFlags.Instance);
+
+            return prop?.GetValue(target) is TextStyle style &&
+                   style.Name == "wqy-unicode";
         }
-        catch { return false; }
+        catch
+        {
+            return false;
+        }
     }
 }

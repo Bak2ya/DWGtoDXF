@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#f4f6f8" />
-    <meta name="description" content="DWG를 브라우저에서 로컬로 DXF로 변환하는 DWG2DXF 웹앱" />
+    <meta name="description" content="Convert DWG files to DXF locally in your browser." />
     <base href="/" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" type="image/png" href="assets/app_logo.png" />
@@ -16,19 +16,59 @@
         <div class="boot-screen">
             <img src="assets/app_logo.png" alt="" />
             <strong>DWG2DXF</strong>
-            <span>변환 엔진을 불러오는 중...</span>
+            <span id="boot-status">Loading conversion engine...</span>
             <div class="boot-progress"></div>
-            <small>첫 실행은 브라우저에 WebAssembly 파일을 준비하느라 조금 더 걸릴 수 있습니다.</small>
+            <small id="boot-note">The first load may take a little longer while WebAssembly is prepared.</small>
         </div>
     </div>
+
     <div id="blazor-error-ui">
-        오류가 발생했습니다. <a href="" class="reload">새로고침</a>
+        An error occurred. <a href="" class="reload">Reload</a>
     </div>
+
+    <script>
+        (() => {
+            const saved = localStorage.getItem('dwg2dxf.language');
+            const raw = saved || navigator.language || 'en';
+            const code = raw.toLowerCase().startsWith('ko') ? 'ko'
+                : raw.toLowerCase().startsWith('ja') ? 'ja'
+                : raw.toLowerCase().startsWith('es') ? 'es'
+                : 'en';
+
+            const text = {
+                en: [
+                    'Loading conversion engine...',
+                    'The first load may take a little longer while WebAssembly is prepared.'
+                ],
+                ko: [
+                    '변환 엔진을 불러오는 중...',
+                    '첫 실행은 WebAssembly 파일을 준비하느라 조금 더 걸릴 수 있습니다.'
+                ],
+                ja: [
+                    '変換エンジンを読み込み中...',
+                    '初回はWebAssemblyの準備に少し時間がかかる場合があります。'
+                ],
+                es: [
+                    'Cargando el motor de conversión...',
+                    'La primera carga puede tardar un poco más mientras se prepara WebAssembly.'
+                ]
+            }[code];
+
+            document.documentElement.lang = code;
+
+            window.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('boot-status').textContent = text[0];
+                document.getElementById('boot-note').textContent = text[1];
+            });
+        })();
+    </script>
+
     <script src="js/app.js"></script>
     <script src="_framework/blazor.webassembly.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js'));
+            window.addEventListener('load', () =>
+                navigator.serviceWorker.register('service-worker.js'));
         }
     </script>
 </body>
