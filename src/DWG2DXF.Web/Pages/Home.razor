@@ -23,16 +23,19 @@
                target="_blank"
                rel="noopener noreferrer">@L.Get("windows.app")</a>
 
-            <select class="language-select"
-                    value="@L.CurrentCode"
-                    @onchange="ChangeLanguage"
-                    disabled="@_isConverting"
-                    aria-label="@L.Get("language.label")">
-                <option value="ko">한국어</option>
-                <option value="en">English</option>
-                <option value="ja">日本語</option>
-                <option value="es">Español</option>
-            </select>
+            <div class="language-control">
+                <span class="language-label">@L.Get("language.menu")</span>
+                <select class="language-select"
+                        value="@L.CurrentCode"
+                        @onchange="ChangeLanguage"
+                        disabled="@_isConverting"
+                        aria-label="@L.Get("language.label")">
+                    <option value="ko">한국어</option>
+                    <option value="en">English</option>
+                    <option value="ja">日本語</option>
+                    <option value="es">Español</option>
+                </select>
+            </div>
 
             <div class="menu-wrap">
                 <button class="text-button" @onclick="ToggleMenu">
@@ -147,19 +150,28 @@
             </div>
 
             <div class="option-row font-row">
-                <div class="option-label">
+                <div class="font-section-head">
                     <strong>@L.Get("option.font.title")</strong>
                     <span>@L.Get("option.font.desc")</span>
                 </div>
 
-                <div class="radio-stack">
+                <div class="cjk-help-box">
+                    <strong>@L.Get("font.cjkTitle")</strong>
+                    <span>@L.Get("font.cjkHelp")</span>
+                </div>
+
+                <div class="font-options">
                     <label>
                         <input type="radio"
                                name="font"
                                checked="@(_options.FontMode == FontMode.None)"
                                @onchange="() => SetFontMode(FontMode.None)"
                                disabled="@_isConverting" />
-                        @L.Get("font.none")
+                        <span>@L.Get("font.none")</span>
+                        @if (IsRecommendedFontMode(FontMode.None))
+                        {
+                            <span class="recommend">@L.Get("font.recommended")</span>
+                        }
                     </label>
 
                     <label>
@@ -168,8 +180,11 @@
                                checked="@(_options.FontMode == FontMode.All)"
                                @onchange="() => SetFontMode(FontMode.All)"
                                disabled="@_isConverting" />
-                        @L.Get("font.all")
-                        <span class="recommend">@L.Get("font.recommended")</span>
+                        <span>@L.Get("font.all")</span>
+                        @if (IsRecommendedFontMode(FontMode.All))
+                        {
+                            <span class="recommend">@L.Get("font.recommended")</span>
+                        }
                     </label>
 
                     <label>
@@ -178,14 +193,17 @@
                                checked="@(_options.FontMode == FontMode.CjkOnly)"
                                @onchange="() => SetFontMode(FontMode.CjkOnly)"
                                disabled="@_isConverting" />
-                        @L.Get("font.cjk")
+                        <span>@L.Get("font.cjk")</span>
                     </label>
-
-                    @if (_options.FontMode == FontMode.CjkOnly)
-                    {
-                        <div class="warning-text">※ @L.Get("font.cjkWarning")</div>
-                    }
                 </div>
+
+                @if (_options.FontMode == FontMode.CjkOnly)
+                {
+                    <div class="cjk-mode-detail">
+                        <span>@L.Get("font.cjkDetail")</span>
+                        <span class="warning-text">※ @L.Get("font.cjkWarning")</span>
+                    </div>
+                }
             </div>
         </section>
 
@@ -379,6 +397,7 @@
 
         var preferredLanguage = await JS.InvokeAsync<string>("dwg2dxf.getLanguage");
         L.SetLanguage(preferredLanguage);
+        SetRecommendedFontModeForLanguage();
 
         _darkMode = await JS.InvokeAsync<bool>("dwg2dxf.getDarkMode");
         _activityMessage = L.Get("status.waiting");
@@ -395,6 +414,7 @@
     {
         var code = e.Value?.ToString();
         L.SetLanguage(code);
+        SetRecommendedFontModeForLanguage();
 
         await JS.InvokeVoidAsync(
             "dwg2dxf.setLanguage",
@@ -599,6 +619,18 @@
 
     private void SetFontMode(FontMode mode) =>
         _options.FontMode = mode;
+
+    private void SetRecommendedFontModeForLanguage()
+    {
+        _options.FontMode = L.CurrentCode is "ko" or "ja"
+            ? FontMode.All
+            : FontMode.None;
+    }
+
+    private bool IsRecommendedFontMode(FontMode mode) =>
+        L.CurrentCode is "ko" or "ja"
+            ? mode == FontMode.All
+            : mode == FontMode.None;
 
     private void ToggleMenu() =>
         _menuOpen = !_menuOpen;

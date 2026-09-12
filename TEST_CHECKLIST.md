@@ -43,3 +43,11 @@ Use at least one real work DWG:
 - [ ] Dark mode, including page background
 - [ ] Desktop layout
 - [ ] Narrow/mobile layout
+
+## Recommendation / guidance
+- [ ] Korean defaults to Replace all text and marks it Recommended.
+- [ ] Japanese defaults to Replace all text and marks it Recommended.
+- [ ] English defaults to Do not convert and marks it Recommended.
+- [ ] Spanish defaults to Do not convert and marks it Recomendado.
+- [ ] CJK explanation is visible without opening a help dialog.
+- [ ] Language (Language) control is clearly identifiable in the header.

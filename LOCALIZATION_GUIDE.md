@@ -30,3 +30,13 @@ When the Windows desktop build is localized later, keep the same four languages 
 - Replace CJK text only
 
 The wording in `LocalizationService.cs` can be used as the shared translation baseline.
+
+## Recommendation defaults
+
+- Korean UI (`ko`): Replace all text
+- Japanese UI (`ja`): Replace all text
+- English UI (`en`): Do not convert
+- Spanish UI (`es`): Do not convert
+
+The CJK explanation must remain directly visible in the font conversion section.
+The language control must remain explicitly identifiable as Language / 언어 (Language) / 言語 (Language) / Idioma (Language).

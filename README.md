@@ -23,7 +23,7 @@ The Windows desktop build is distributed through GitHub Releases.
 - 日本語
 - Español
 
-The web app detects the browser language on first launch. You can change the language at any time, and the selection is saved in the browser.
+The web app detects the browser language on first launch. The **Language** control is always visible in the header, and your manual selection is saved in the browser.
 
 The interface language does **not** control font conversion. A drawing may contain Korean, Japanese, Chinese, or other text regardless of the language used for the UI.
 
@@ -35,9 +35,12 @@ The interface language does **not** control font conversion. A drawing may conta
 - DWG header validation
 - AutoCAD 2010 DXF output or original DWG version
 - Three font modes:
-  - Keep original text styles
-  - Replace all text with `wqy-unicode` **(recommended for problematic CJK drawings)**
-  - Replace only text containing CJK characters
+  - Do not convert
+  - Replace all text with `wqy-unicode`
+  - Replace CJK text only
+- Language-specific default recommendation:
+  - Korean / Japanese UI → **Replace all text**
+  - English / Spanish UI → **Do not convert**
 - Korean, Japanese, and common CJK character detection
 - Re-read the generated DXF and compare major object counts
 - Progress stages and activity animation during long conversions
@@ -58,7 +61,9 @@ DWG2DXF can point text styles to `wqy-unicode.lff`. The CJK-only mode detects co
 - Katakana
 - CJK Unified Ideographs / common Han characters
 
-For maximum compatibility, **Replace all text** remains the recommended mode when a drawing has broken CJK text.
+CJK means **Chinese, Japanese, and Korean** characters. This explanation is always visible next to the font options.
+
+For maximum compatibility when CJK text is actually garbled, **Replace all text** remains the most reliable mode. If text already displays correctly, no font conversion is necessary.
 
 ## What “Review” means
 

@@ -60,6 +60,7 @@ public sealed class LocalizationService
         ["meta.description"] = "Convert DWG files to DXF locally in your browser.",
 
         ["language.label"] = "Language",
+        ["language.menu"] = "Language",
         ["windows.app"] = "Windows app",
         ["source.code"] = "Source code",
         ["menu.more"] = "More",
@@ -84,12 +85,15 @@ public sealed class LocalizationService
         ["option.output.original"] = "Keep original DWG version",
 
         ["option.font.title"] = "Font conversion",
-        ["option.font.desc"] = "If CJK text is garbled in LibreCAD, replacing all text is the most reliable option.",
+        ["option.font.desc"] = "Font conversion is optional and is mainly intended for CJK text compatibility in LibreCAD.",
         ["font.none"] = "Do not convert",
         ["font.all"] = "Replace all text",
-        ["font.cjk"] = "Replace text containing CJK characters only",
+        ["font.cjk"] = "Replace CJK text only",
         ["font.recommended"] = "Recommended",
-        ["font.cjkWarning"] = "CJK-only conversion may not work correctly in some drawings.",
+        ["font.cjkTitle"] = "What is CJK?",
+        ["font.cjkHelp"] = "CJK means Chinese, Japanese, and Korean characters. Use font conversion when CJK text appears garbled in LibreCAD. If text already displays correctly, Do not convert is recommended.",
+        ["font.cjkDetail"] = "Only text containing Chinese, Japanese, or Korean characters is changed. Latin letters and numbers keep their original styles when possible.",
+        ["font.cjkWarning"] = "CJK-only conversion may miss some shared or special text styles in certain drawings.",
 
         ["convert.button"] = "Convert to DXF",
         ["convert.running"] = "Converting",
@@ -116,7 +120,7 @@ public sealed class LocalizationService
         ["about.step5"] = "Open the result in LibreCAD and visually confirm the drawing.",
         ["about.notice"] = "This is not a CAD editor. Proxy/AEC/Civil and other special objects are not guaranteed to convert perfectly, and object-count validation does not prove mathematical equivalence.",
         ["about.platforms"] = "Use this web version on macOS, Windows, or Linux. A Windows desktop build is also available from GitHub Releases.",
-        ["about.version"] = "Web v0.2 · ACadSharp 3.6.51",
+        ["about.version"] = "Web v0.3 · ACadSharp 3.6.51",
 
         ["fontGuide.title"] = "LibreCAD font installation",
         ["fontGuide.intro"] = "Browsers cannot open the LibreCAD installation folder directly. Download the font below and copy it to LibreCAD's font folder.",
@@ -187,6 +191,7 @@ public sealed class LocalizationService
         ["meta.description"] = "DWG 파일을 서버 업로드 없이 브라우저에서 로컬로 DXF로 변환합니다.",
 
         ["language.label"] = "언어",
+        ["language.menu"] = "언어 (Language)",
         ["windows.app"] = "Windows 앱",
         ["source.code"] = "소스 코드",
         ["menu.more"] = "추가기능",
@@ -211,12 +216,15 @@ public sealed class LocalizationService
         ["option.output.original"] = "원본 DWG 버전 유지",
 
         ["option.font.title"] = "글꼴 변환",
-        ["option.font.desc"] = "LibreCAD에서 CJK 문자가 깨지는 도면은 전체 문자 변경이 가장 안정적입니다.",
+        ["option.font.desc"] = "LibreCAD에서 한글·일본어·한자 등이 깨져 보이는 경우를 위한 선택 기능입니다.",
         ["font.none"] = "변환 안 함",
         ["font.all"] = "전체 문자 변경",
-        ["font.cjk"] = "CJK 포함 문자만 변경",
+        ["font.cjk"] = "한·중·일(CJK) 문자만 변경",
         ["font.recommended"] = "권장",
-        ["font.cjkWarning"] = "CJK 문자만 변경할 경우 일부 도면에서 오작동할 수 있습니다.",
+        ["font.cjkTitle"] = "CJK란?",
+        ["font.cjkHelp"] = "CJK는 중국어·일본어·한국어 문자를 뜻합니다. LibreCAD에서 관련 문자가 깨지는 경우 글꼴 변환을 사용할 수 있으며, 호환성이 중요하면 전체 문자 변경이 가장 안정적입니다.",
+        ["font.cjkDetail"] = "한글, 히라가나, 가타카나, 한자 등이 포함된 문자만 변경하고 영문·숫자는 가능한 원본 스타일을 유지합니다.",
+        ["font.cjkWarning"] = "일부 도면에서는 공유 문자 스타일이나 특수 객체 때문에 CJK 문자만 정확히 분리되지 않을 수 있습니다.",
 
         ["convert.button"] = "DXF 변환",
         ["convert.running"] = "변환 중",
@@ -243,7 +251,7 @@ public sealed class LocalizationService
         ["about.step5"] = "LibreCAD에서 결과 도면을 열어 실제 형상을 최종 확인합니다.",
         ["about.notice"] = "이 도구는 CAD 편집기가 아닙니다. Proxy/AEC/Civil 등 특수 객체는 완벽한 변환을 보장하지 않으며, 객체 수 검증도 수학적 동일성을 증명하는 기능은 아닙니다.",
         ["about.platforms"] = "웹 버전은 macOS, Windows, Linux에서 사용할 수 있습니다. Windows 데스크톱 버전은 GitHub Releases에서도 받을 수 있습니다.",
-        ["about.version"] = "Web v0.2 · ACadSharp 3.6.51",
+        ["about.version"] = "Web v0.3 · ACadSharp 3.6.51",
 
         ["fontGuide.title"] = "LibreCAD 글꼴 설치 안내",
         ["fontGuide.intro"] = "브라우저는 보안상 LibreCAD 설치 폴더를 직접 열 수 없습니다. 아래 글꼴 파일을 받은 뒤 LibreCAD 글꼴 폴더에 직접 복사하세요.",
@@ -314,6 +322,7 @@ public sealed class LocalizationService
         ["meta.description"] = "DWGファイルをサーバーへ送信せず、ブラウザ内でDXFに変換します。",
 
         ["language.label"] = "言語",
+        ["language.menu"] = "言語 (Language)",
         ["windows.app"] = "Windows版",
         ["source.code"] = "ソースコード",
         ["menu.more"] = "その他",
@@ -338,12 +347,15 @@ public sealed class LocalizationService
         ["option.output.original"] = "元のDWGバージョンを維持",
 
         ["option.font.title"] = "フォント変換",
-        ["option.font.desc"] = "LibreCADでCJK文字が文字化けする場合は、すべての文字を変更する方法が最も安定します。",
+        ["option.font.desc"] = "LibreCADでハングル・かな・漢字などが文字化けする場合のためのオプションです。",
         ["font.none"] = "変換しない",
         ["font.all"] = "すべての文字を変更",
-        ["font.cjk"] = "CJK文字を含むテキストのみ変更",
+        ["font.cjk"] = "CJK文字のみ変更",
         ["font.recommended"] = "推奨",
-        ["font.cjkWarning"] = "CJK文字のみの変換は、一部の図面で正しく処理できない場合があります。",
+        ["font.cjkTitle"] = "CJKとは？",
+        ["font.cjkHelp"] = "CJKは中国語・日本語・韓国語の文字を意味します。LibreCADで関連文字が文字化けする場合に使用し、互換性を優先する場合は「すべての文字を変更」が最も安定します。",
+        ["font.cjkDetail"] = "ハングル、ひらがな、カタカナ、漢字などを含むテキストのみ変更し、英数字は可能な限り元のスタイルを維持します。",
+        ["font.cjkWarning"] = "一部の図面では共有文字スタイルや特殊オブジェクトのため、CJK文字だけを正確に分離できない場合があります。",
 
         ["convert.button"] = "DXFに変換",
         ["convert.running"] = "変換中",
@@ -370,7 +382,7 @@ public sealed class LocalizationService
         ["about.step5"] = "LibreCADで結果を開き、図面を目視で最終確認します。",
         ["about.notice"] = "このツールはCADエディターではありません。Proxy/AEC/Civilなどの特殊オブジェクトは完全な変換を保証できず、オブジェクト数の検証も数学的な同一性を証明するものではありません。",
         ["about.platforms"] = "Web版はmacOS、Windows、Linuxで利用できます。Windowsデスクトップ版はGitHub Releasesからも入手できます。",
-        ["about.version"] = "Web v0.2 · ACadSharp 3.6.51",
+        ["about.version"] = "Web v0.3 · ACadSharp 3.6.51",
 
         ["fontGuide.title"] = "LibreCAD フォント設定",
         ["fontGuide.intro"] = "ブラウザからLibreCADのインストールフォルダを直接開くことはできません。下のフォントをダウンロードし、LibreCADのフォントフォルダへコピーしてください。",
@@ -441,6 +453,7 @@ public sealed class LocalizationService
         ["meta.description"] = "Convierte archivos DWG a DXF localmente en el navegador, sin subirlos a un servidor.",
 
         ["language.label"] = "Idioma",
+        ["language.menu"] = "Idioma (Language)",
         ["windows.app"] = "App para Windows",
         ["source.code"] = "Código fuente",
         ["menu.more"] = "Más",
@@ -465,12 +478,15 @@ public sealed class LocalizationService
         ["option.output.original"] = "Mantener la versión DWG original",
 
         ["option.font.title"] = "Conversión de fuentes",
-        ["option.font.desc"] = "Si los caracteres CJK se muestran mal en LibreCAD, cambiar todo el texto es la opción más fiable.",
+        ["option.font.desc"] = "La conversión de fuentes es opcional y está pensada principalmente para la compatibilidad de texto CJK en LibreCAD.",
         ["font.none"] = "No convertir",
         ["font.all"] = "Cambiar todo el texto",
-        ["font.cjk"] = "Cambiar solo texto que contenga caracteres CJK",
+        ["font.cjk"] = "Cambiar solo texto CJK",
         ["font.recommended"] = "Recomendado",
-        ["font.cjkWarning"] = "La conversión solo de caracteres CJK puede no funcionar correctamente en algunos dibujos.",
+        ["font.cjkTitle"] = "¿Qué significa CJK?",
+        ["font.cjkHelp"] = "CJK significa caracteres chinos, japoneses y coreanos. Usa la conversión cuando ese texto se vea dañado en LibreCAD. Si el texto ya se muestra correctamente, se recomienda No convertir.",
+        ["font.cjkDetail"] = "Solo se cambia el texto que contiene caracteres chinos, japoneses o coreanos. Las letras latinas y los números conservan su estilo original cuando es posible.",
+        ["font.cjkWarning"] = "En algunos dibujos, los estilos compartidos o los objetos especiales pueden impedir separar únicamente el texto CJK.",
 
         ["convert.button"] = "Convertir a DXF",
         ["convert.running"] = "Convirtiendo",
@@ -497,7 +513,7 @@ public sealed class LocalizationService
         ["about.step5"] = "Abre el resultado en LibreCAD y comprueba visualmente el dibujo.",
         ["about.notice"] = "Esta herramienta no es un editor CAD. No se garantiza la conversión perfecta de objetos especiales como Proxy/AEC/Civil, y la comparación del número de objetos no demuestra una equivalencia matemática.",
         ["about.platforms"] = "La versión web funciona en macOS, Windows y Linux. También hay una versión de escritorio para Windows en GitHub Releases.",
-        ["about.version"] = "Web v0.2 · ACadSharp 3.6.51",
+        ["about.version"] = "Web v0.3 · ACadSharp 3.6.51",
 
         ["fontGuide.title"] = "Instalación de fuentes en LibreCAD",
         ["fontGuide.intro"] = "El navegador no puede abrir directamente la carpeta de instalación de LibreCAD. Descarga la fuente y cópiala manualmente a la carpeta de fuentes de LibreCAD.",
