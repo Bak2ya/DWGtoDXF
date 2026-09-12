@@ -24,6 +24,12 @@ button:disabled { cursor: default; opacity: .5; }
     --text: #eef1f5; --muted: #9ca5b1; --accent: #4b93ff; --accent-hover: #6aa5ff;
     --danger: #e07a7a; --success: #65bd8f; --warn: #e2b661; --shadow: rgba(0,0,0,.33);
 }
+
+/* 다크 모드에서는 앱 카드뿐 아니라 브라우저 페이지 전체 배경도 어둡게 표시합니다. */
+html:has(.window[data-theme="dark"]),
+body:has(.window[data-theme="dark"]) {
+    background: #0f1115;
+}
 .topbar { min-height: 74px; display:flex; align-items:center; justify-content:space-between; padding: 14px 18px 12px; border-bottom:1px solid var(--border); }
 .brand { display:flex; align-items:center; gap:12px; min-width:0; }
 .brand img { width:42px; height:42px; object-fit:contain; }

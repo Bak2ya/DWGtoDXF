@@ -92,17 +92,29 @@ public sealed class CadConversionService
                 break;
         }
 
-        using var output = new MemoryStream();
-        var writer = new DxfWriter(output, doc, binary: false);
-        // 메모리 스트림은 변환 뒤 재읽어야 하므로 writer가 닫지 않게 설정합니다.
-        writer.Configuration.CloseStream = false;
-        writer.Write();
-        writer.Dispose();
+        byte[] dxfBytes;
 
-        if (output.Length <= 0)
+        using (var output = new MemoryStream())
+        {
+            var writer = new DxfWriter(output, doc, binary: false);
+            // ACadSharp의 DxfWriter.Dispose()는 내부 StreamWriter와 원본 스트림을 닫습니다.
+            // 따라서 Write()가 Flush()를 끝낸 직후 바이트를 먼저 복사한 다음 writer를 Dispose합니다.
+            writer.Configuration.CloseStream = false;
+
+            try
+            {
+                writer.Write();
+                dxfBytes = output.ToArray();
+            }
+            finally
+            {
+                writer.Dispose();
+            }
+        }
+
+        if (dxfBytes.Length <= 0)
             throw new InvalidOperationException("DXF 파일이 생성되지 않았습니다.");
 
-        var dxfBytes = output.ToArray();
         log?.Invoke($"DXF 생성 완료: {dxfBytes.Length:N0} bytes · 재읽기 검증 중...");
 
         using var verifyStream = new MemoryStream(dxfBytes, writable: false);
