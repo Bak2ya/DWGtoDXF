@@ -6,12 +6,12 @@ Convert DWG files to DXF for use with LibreCAD.
 
 ## Use it now
 
-### 🌐 Web app
+### Web app
 **https://bak2ya.github.io/DWGtoDXF/**
 
 No installation is required. DWG files are processed locally inside the browser and are not uploaded to a conversion server.
 
-### 🪟 Windows app
+### Windows app
 **https://github.com/Bak2ya/DWGtoDXF/releases**
 
 The Windows desktop build is distributed through GitHub Releases.
