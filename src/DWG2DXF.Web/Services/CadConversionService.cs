@@ -47,14 +47,21 @@ public sealed class CadConversionService
         Microsoft.AspNetCore.Components.Forms.IBrowserFile file,
         ConversionOptions options,
         Action<string>? log = null,
+        Action<int, string>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        progress?.Invoke(3, "DWG 불러오는 중");
         log?.Invoke($"{file.Name} 읽는 중...");
+        await Task.Delay(16, cancellationToken);
 
         await using var browserStream = file.OpenReadStream(DefaultMaxFileSize, cancellationToken);
         using var input = new MemoryStream((int)Math.Min(file.Size, int.MaxValue));
         await browserStream.CopyToAsync(input, cancellationToken);
         input.Position = 0;
+
+        progress?.Invoke(18, "DWG 구조 분석 중");
+        log?.Invoke("DWG 구조 분석 중...");
+        await Task.Delay(16, cancellationToken);
 
         CadDocument doc;
         using (var reader = new DwgReader(input))
@@ -62,7 +69,13 @@ public sealed class CadConversionService
             doc = reader.Read() ?? throw new InvalidOperationException("DWG 문서를 읽지 못했습니다.");
         }
 
+        progress?.Invoke(48, "객체 정보 확인 중");
+        await Task.Delay(16, cancellationToken);
+
         var before = GetDocStats(doc);
+
+        progress?.Invoke(55, "출력 설정 적용 중");
+        await Task.Delay(16, cancellationToken);
 
         if (options.OutputVersion == OutputVersionMode.AutoCad2010)
         {
@@ -73,6 +86,9 @@ public sealed class CadConversionService
         {
             log?.Invoke($"출력 버전: 원본 유지 ({doc.Header.Version})");
         }
+
+        progress?.Invoke(62, options.FontMode == FontMode.None ? "글꼴 설정 확인 중" : "글꼴 변환 중");
+        await Task.Delay(16, cancellationToken);
 
         FontApplyResult? fontResult = null;
         switch (options.FontMode)
@@ -91,6 +107,10 @@ public sealed class CadConversionService
                 log?.Invoke("글꼴: 변환하지 않음 (원본 문자 스타일 유지)");
                 break;
         }
+
+        progress?.Invoke(75, "DXF 생성 중");
+        log?.Invoke("DXF 생성 중...");
+        await Task.Delay(16, cancellationToken);
 
         byte[] dxfBytes;
 
@@ -116,6 +136,8 @@ public sealed class CadConversionService
             throw new InvalidOperationException("DXF 파일이 생성되지 않았습니다.");
 
         log?.Invoke($"DXF 생성 완료: {dxfBytes.Length:N0} bytes · 재읽기 검증 중...");
+        progress?.Invoke(88, "DXF 재읽기 검증 중");
+        await Task.Delay(16, cancellationToken);
 
         using var verifyStream = new MemoryStream(dxfBytes, writable: false);
         CadDocument dxfDoc;
@@ -123,6 +145,9 @@ public sealed class CadConversionService
         {
             dxfDoc = dxfReader.Read() ?? throw new InvalidOperationException("생성된 DXF를 다시 읽어 검증하지 못했습니다.");
         }
+
+        progress?.Invoke(95, "검증 결과 정리 중");
+        await Task.Delay(16, cancellationToken);
 
         var after = GetDocStats(dxfDoc);
         var diffs = CompareStats(before, after);
@@ -138,6 +163,8 @@ public sealed class CadConversionService
             else
                 log?.Invoke($"글꼴 재검증: wqy-unicode 스타일 정상 (문자 {fontUsage.TextEntities}, 치수스타일 {fontUsage.DimensionStyles})");
         }
+
+        progress?.Invoke(100, "변환 완료");
 
         var baseName = Path.GetFileNameWithoutExtension(file.Name);
         return new ConversionResult
