@@ -1,4 +1,4 @@
-const CACHE = 'dwg2dxf-web-v0.4.0';
+const CACHE = 'dwg2dxf-web-v0.4.1';
 const CORE = [
   './',
   'index.html',

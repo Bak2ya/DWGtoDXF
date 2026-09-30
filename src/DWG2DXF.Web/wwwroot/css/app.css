@@ -128,7 +128,7 @@ main { padding:18px; }
 .font-options input { accent-color:var(--accent); flex:0 0 auto; }
 .recommend {
     flex:0 0 auto;
-    margin-left:auto;
+    margin-left:2px;
     padding:2px 5px;
     border-radius:4px;
     background:color-mix(in srgb, var(--accent) 12%, transparent);
