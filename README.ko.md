@@ -1,6 +1,6 @@
 # DWG2DXF
 
-[English README](README.md)
+[English README](README.en.md)
 
 DWG 파일을 LibreCAD에서 사용할 수 있는 DXF로 변환하는 도구입니다.
 
