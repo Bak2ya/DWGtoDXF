@@ -1,6 +1,6 @@
 # DWG2DXF
 
-[한국어 README](README.ko.md)
+[한국어 README](README.md)
 
 Convert DWG files to DXF for use with LibreCAD.
 
