@@ -167,11 +167,13 @@
                                checked="@(_options.FontMode == FontMode.None)"
                                @onchange="() => SetFontMode(FontMode.None)"
                                disabled="@_isConverting" />
-                        <span>@L.Get("font.none")</span>
-                        @if (IsRecommendedFontMode(FontMode.None))
-                        {
-                            <span class="recommend">@L.Get("font.recommended")</span>
-                        }
+                        <span class="option-copy">
+                            <span>@L.Get("font.none")</span>
+                            @if (IsRecommendedFontMode(FontMode.None))
+                            {
+                                <span class="recommend">@L.Get("font.recommended")</span>
+                            }
+                        </span>
                     </label>
 
                     <label>
@@ -180,11 +182,13 @@
                                checked="@(_options.FontMode == FontMode.All)"
                                @onchange="() => SetFontMode(FontMode.All)"
                                disabled="@_isConverting" />
-                        <span>@L.Get("font.all")</span>
-                        @if (IsRecommendedFontMode(FontMode.All))
-                        {
-                            <span class="recommend">@L.Get("font.recommended")</span>
-                        }
+                        <span class="option-copy">
+                            <span>@L.Get("font.all")</span>
+                            @if (IsRecommendedFontMode(FontMode.All))
+                            {
+                                <span class="recommend">@L.Get("font.recommended")</span>
+                            }
+                        </span>
                     </label>
 
                     <label>

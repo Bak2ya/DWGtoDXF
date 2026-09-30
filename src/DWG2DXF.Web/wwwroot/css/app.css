@@ -126,9 +126,16 @@ main { padding:18px; }
     color:var(--text);
 }
 .font-options input { accent-color:var(--accent); flex:0 0 auto; }
+.option-copy {
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    min-width:0;
+    white-space:nowrap;
+}
 .recommend {
     flex:0 0 auto;
-    margin-left:2px;
+    margin-left:0;
     padding:2px 5px;
     border-radius:4px;
     background:color-mix(in srgb, var(--accent) 12%, transparent);

@@ -1,8 +1,8 @@
-const CACHE = 'dwg2dxf-web-v0.4.1';
+const CACHE = 'dwg2dxf-web-v0.4.2';
 const CORE = [
   './',
   'index.html',
-  'css/app.css',
+  'css/app.css?v=0.4.2',
   'js/app.js',
   'manifest.webmanifest',
   'assets/app_logo.png',

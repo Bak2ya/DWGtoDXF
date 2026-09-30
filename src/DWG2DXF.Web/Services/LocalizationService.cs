@@ -120,7 +120,7 @@ public sealed class LocalizationService
         ["about.step5"] = "Open the result in LibreCAD and visually confirm the drawing.",
         ["about.notice"] = "This is not a CAD editor. Proxy/AEC/Civil and other special objects are not guaranteed to convert perfectly, and object-count validation does not prove mathematical equivalence.",
         ["about.platforms"] = "Use this web version on macOS, Windows, or Linux. A Windows desktop build is also available from GitHub Releases.",
-        ["about.version"] = "Web v0.4.1 · ACadSharp 3.6.51",
+        ["about.version"] = "Web v0.4.2 · ACadSharp 3.6.51",
 
         ["fontGuide.title"] = "LibreCAD font installation",
         ["fontGuide.intro"] = "Browsers cannot open the LibreCAD installation folder directly. Download the font below and copy it to LibreCAD's font folder.",
@@ -251,7 +251,7 @@ public sealed class LocalizationService
         ["about.step5"] = "LibreCAD에서 결과 도면을 열어 실제 형상을 최종 확인합니다.",
         ["about.notice"] = "이 도구는 CAD 편집기가 아닙니다. Proxy/AEC/Civil 등 특수 객체는 완벽한 변환을 보장하지 않으며, 객체 수 검증도 수학적 동일성을 증명하는 기능은 아닙니다.",
         ["about.platforms"] = "웹 버전은 macOS, Windows, Linux에서 사용할 수 있습니다. Windows 데스크톱 버전은 GitHub Releases에서도 받을 수 있습니다.",
-        ["about.version"] = "Web v0.4.1 · ACadSharp 3.6.51",
+        ["about.version"] = "Web v0.4.2 · ACadSharp 3.6.51",
 
         ["fontGuide.title"] = "LibreCAD 글꼴 설치 안내",
         ["fontGuide.intro"] = "브라우저는 보안상 LibreCAD 설치 폴더를 직접 열 수 없습니다. 아래 글꼴 파일을 받은 뒤 LibreCAD 글꼴 폴더에 직접 복사하세요.",
@@ -382,7 +382,7 @@ public sealed class LocalizationService
         ["about.step5"] = "LibreCADで結果を開き、図面を目視で最終確認します。",
         ["about.notice"] = "このツールはCADエディターではありません。Proxy/AEC/Civilなどの特殊オブジェクトは完全な変換を保証できず、オブジェクト数の検証も数学的な同一性を証明するものではありません。",
         ["about.platforms"] = "Web版はmacOS、Windows、Linuxで利用できます。Windowsデスクトップ版はGitHub Releasesからも入手できます。",
-        ["about.version"] = "Web v0.4.1 · ACadSharp 3.6.51",
+        ["about.version"] = "Web v0.4.2 · ACadSharp 3.6.51",
 
         ["fontGuide.title"] = "LibreCAD フォント設定",
         ["fontGuide.intro"] = "ブラウザからLibreCADのインストールフォルダを直接開くことはできません。下のフォントをダウンロードし、LibreCADのフォントフォルダへコピーしてください。",
@@ -513,7 +513,7 @@ public sealed class LocalizationService
         ["about.step5"] = "Abre el resultado en LibreCAD y comprueba visualmente el dibujo.",
         ["about.notice"] = "Esta herramienta no es un editor CAD. No se garantiza la conversión perfecta de objetos especiales como Proxy/AEC/Civil, y la comparación del número de objetos no demuestra una equivalencia matemática.",
         ["about.platforms"] = "La versión web funciona en macOS, Windows y Linux. También hay una versión de escritorio para Windows en GitHub Releases.",
-        ["about.version"] = "Web v0.4.1 · ACadSharp 3.6.51",
+        ["about.version"] = "Web v0.4.2 · ACadSharp 3.6.51",
 
         ["fontGuide.title"] = "Instalación de fuentes en LibreCAD",
         ["fontGuide.intro"] = "El navegador no puede abrir directamente la carpeta de instalación de LibreCAD. Descarga la fuente y cópiala manualmente a la carpeta de fuentes de LibreCAD.",
