@@ -1,0 +1,680 @@
+@page "/"
+@inject CadConversionService Converter
+@inject LocalizationService L
+@inject IJSRuntime JS
+
+<PageTitle>DWG2DXF</PageTitle>
+
+<div class="window" data-theme="@(_darkMode ? "dark" : "light")">
+    <header class="topbar">
+        <div class="brand">
+            <img src="assets/app_logo.png" alt="DWG2DXF" />
+            <div>
+                <h1>DWG2DXF</h1>
+                <div class="engine-status">
+                    <span class="status-dot"></span>@L.Get("engine.status")
+                </div>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <a class="text-button windows-link"
+               href="@WindowsReleasesUrl"
+               target="_blank"
+               rel="noopener noreferrer">@L.Get("windows.app")</a>
+
+            <div class="language-control">
+                <span class="language-label">@L.Get("language.menu")</span>
+                <select class="language-select"
+                        value="@L.CurrentCode"
+                        @onchange="ChangeLanguage"
+                        disabled="@_isConverting"
+                        aria-label="@L.Get("language.label")">
+                    <option value="ko">한국어</option>
+                    <option value="en">English</option>
+                    <option value="ja">日本語</option>
+                    <option value="es">Español</option>
+                </select>
+            </div>
+
+            <div class="menu-wrap">
+                <button class="text-button" @onclick="ToggleMenu">
+                    @L.Get("menu.more") <span>▾</span>
+                </button>
+
+                @if (_menuOpen)
+                {
+                    <div class="menu-panel">
+                        <button @onclick="() => OpenDialog(DialogType.About)">
+                            @L.Get("menu.about")
+                        </button>
+
+                        <a href="@SourceCodeUrl"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           @onclick="CloseMenu">
+                            @L.Get("source.code")
+                        </a>
+
+                        <div class="menu-separator"></div>
+
+                        <button @onclick="ToggleDarkMode">
+                            @L.Get("menu.darkMode")
+                            <span class="menu-state">@(_darkMode ? L.Get("menu.on") : L.Get("menu.off"))</span>
+                        </button>
+
+                        <div class="menu-separator"></div>
+
+                        <button @onclick="() => OpenDialog(DialogType.Font)">
+                            @L.Get("menu.fontGuide")
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <label class="drop-zone">
+            <InputFile OnChange="AddFiles" multiple accept=".dwg" class="file-input" />
+            <div class="drop-content">
+                <div class="drop-icon">＋</div>
+                <strong>@L.Get("drop.title")</strong>
+                <span>@L.Get("drop.subtitle")</span>
+            </div>
+        </label>
+
+        <section class="file-list" aria-label="DWG files">
+            @if (_files.Count == 0)
+            {
+                <div class="empty-row">@L.Get("files.empty")</div>
+            }
+            else
+            {
+                @foreach (var file in _files)
+                {
+                    var validationError = GetValidationError(file);
+
+                    <div class="file-row @(validationError is null ? "" : "invalid")">
+                        <div class="file-main">
+                            <span class="file-name">@file.Name</span>
+                            <span class="file-meta">
+                                @FormatSize(file.Size)
+                                @(file.Header is null ? "" : $"· {file.Header}")
+                            </span>
+                        </div>
+
+                        <span class="file-status">
+                            @(validationError ?? L.Get(file.StatusKey))
+                        </span>
+
+                        <button class="icon-button"
+                                title="@L.Get("files.removeTitle")"
+                                @onclick="() => RemoveFile(file.Id)"
+                                disabled="@_isConverting">×</button>
+                    </div>
+                }
+            }
+        </section>
+
+        <div class="file-actions">
+            <label class="button secondary compact">
+                @L.Get("files.add")
+                <InputFile OnChange="AddFiles" multiple accept=".dwg" class="file-input" />
+            </label>
+
+            <button class="button secondary compact"
+                    @onclick="RemoveInvalid"
+                    disabled="@(_isConverting || !_files.Any(f => f.ValidationErrorKey is not null))">
+                @L.Get("files.removeErrors")
+            </button>
+
+            <button class="button secondary compact"
+                    @onclick="ClearFiles"
+                    disabled="@(_isConverting || _files.Count == 0)">
+                @L.Get("files.clear")
+            </button>
+        </div>
+
+        <section class="options-grid">
+            <div class="option-row">
+                <div class="option-label">
+                    <strong>@L.Get("option.output.title")</strong>
+                    <span>@L.Get("option.output.desc")</span>
+                </div>
+
+                <select @bind="_options.OutputVersion" disabled="@_isConverting">
+                    <option value="@OutputVersionMode.AutoCad2010">@L.Get("option.output.2010")</option>
+                    <option value="@OutputVersionMode.KeepOriginal">@L.Get("option.output.original")</option>
+                </select>
+            </div>
+
+            <div class="option-row font-row">
+                <div class="font-section-head">
+                    <strong>@L.Get("option.font.title")</strong>
+                    <span>@L.Get("option.font.desc")</span>
+                </div>
+
+                <div class="cjk-help-box">
+                    <strong>@L.Get("font.cjkTitle")</strong>
+                    <span>@L.Get("font.cjkHelp")</span>
+                </div>
+
+                <div class="font-options">
+                    <label>
+                        <input type="radio"
+                               name="font"
+                               checked="@(_options.FontMode == FontMode.None)"
+                               @onchange="() => SetFontMode(FontMode.None)"
+                               disabled="@_isConverting" />
+                        <span>@L.Get("font.none")</span>
+                        @if (IsRecommendedFontMode(FontMode.None))
+                        {
+                            <span class="recommend">@L.Get("font.recommended")</span>
+                        }
+                    </label>
+
+                    <label>
+                        <input type="radio"
+                               name="font"
+                               checked="@(_options.FontMode == FontMode.All)"
+                               @onchange="() => SetFontMode(FontMode.All)"
+                               disabled="@_isConverting" />
+                        <span>@L.Get("font.all")</span>
+                        @if (IsRecommendedFontMode(FontMode.All))
+                        {
+                            <span class="recommend">@L.Get("font.recommended")</span>
+                        }
+                    </label>
+
+                    <label>
+                        <input type="radio"
+                               name="font"
+                               checked="@(_options.FontMode == FontMode.CjkOnly)"
+                               @onchange="() => SetFontMode(FontMode.CjkOnly)"
+                               disabled="@_isConverting" />
+                        <span>@L.Get("font.cjk")</span>
+                    </label>
+                </div>
+
+                @if (_options.FontMode == FontMode.CjkOnly)
+                {
+                    <div class="cjk-mode-detail">
+                        <span>@L.Get("font.cjkDetail")</span>
+                        <span class="warning-text">※ @L.Get("font.cjkWarning")</span>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="convert-area">
+            <button class="button primary"
+                    @onclick="ConvertAll"
+                    disabled="@(_isConverting || !_files.Any(f => f.ValidationErrorKey is null))">
+                @(_isConverting ? L.Get("convert.running") : L.Get("convert.button"))
+            </button>
+
+            <div class="progress-info">
+                <div class="progress-track @(_isConverting ? "active" : "")">
+                    <div class="progress-bar" style="width:@_progress%"></div>
+
+                    @if (_isConverting)
+                    {
+                        <div class="progress-sweep" aria-hidden="true"></div>
+                    }
+                </div>
+
+                @if (_isConverting)
+                {
+                    <div class="activity-line" aria-live="polite">
+                        <span>@_activityMessage</span>
+                        <span class="working-dots" aria-hidden="true">
+                            <i></i><i></i><i></i><i></i><i></i>
+                        </span>
+                    </div>
+                }
+            </div>
+
+            <span class="progress-label">@_progress%</span>
+        </section>
+
+        <section class="log-box">
+            @if (_logs.Count == 0)
+            {
+                <div class="log-muted">@L.Get("log.empty")</div>
+            }
+            else
+            {
+                @foreach (var log in _logs)
+                {
+                    <div>@log</div>
+                }
+            }
+        </section>
+
+        @if (_results.Count > 0)
+        {
+            <section class="results">
+                <div class="results-head">
+                    <strong>@L.Get("results.title")</strong>
+                    <button class="button secondary compact" @onclick="DownloadAll">
+                        @L.Get("results.downloadZip")
+                    </button>
+                </div>
+
+                @foreach (var result in _results)
+                {
+                    <div class="result-row">
+                        <div>
+                            <div class="result-name">
+                                @(result.NeedsReview ? "⚠" : "✓") @result.OutputName
+                            </div>
+
+                            <div class="result-meta">
+                                @if (result.NeedsReview)
+                                {
+                                    <span>
+                                        @L.Get("results.review") · @string.Join(", ", result.Differences)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span>
+                                        @L.Get("results.verified") ·
+                                        @L.Get("results.objects") @result.After.Total ·
+                                        @L.Get("results.layers") @result.After.Layers ·
+                                        @L.Get("results.text") @result.After.Text
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <button class="button secondary compact"
+                                @onclick="() => DownloadResult(result)">
+                            @L.Get("results.downloadDxf")
+                        </button>
+                    </div>
+                }
+            </section>
+        }
+
+        <footer>
+            <span>@L.Get("footer.original")</span>
+            <span>·</span>
+            <span>@L.Get("footer.download")</span>
+        </footer>
+    </main>
+
+    @if (_dialog != DialogType.None)
+    {
+        <div class="modal-backdrop" @onclick="CloseDialog">
+            <div class="modal" @onclick:stopPropagation="true">
+                <button class="modal-close" @onclick="CloseDialog">×</button>
+
+                @if (_dialog == DialogType.About)
+                {
+                    <h2>@L.Get("about.title")</h2>
+                    <p>@L.Get("about.intro")</p>
+                    <p>@L.Get("about.platforms")</p>
+
+                    <div class="release-links">
+                        <a class="button primary inline"
+                           href="@WindowsReleasesUrl"
+                           target="_blank"
+                           rel="noopener noreferrer">@L.Get("windows.app")</a>
+
+                        <a class="button secondary inline"
+                           href="@SourceCodeUrl"
+                           target="_blank"
+                           rel="noopener noreferrer">@L.Get("source.code")</a>
+                    </div>
+
+                    <h3>@L.Get("about.useTitle")</h3>
+                    <ol>
+                        <li>@L.Get("about.step1")</li>
+                        <li>@L.Get("about.step2")</li>
+                        <li>@L.Get("about.step3")</li>
+                        <li>@L.Get("about.step4")</li>
+                        <li>@L.Get("about.step5")</li>
+                    </ol>
+
+                    <div class="notice-box">@L.Get("about.notice")</div>
+                    <p class="small">@L.Get("about.version")</p>
+                }
+                else if (_dialog == DialogType.Font)
+                {
+                    <h2>@L.Get("fontGuide.title")</h2>
+                    <p>@L.Get("fontGuide.intro")</p>
+
+                    <a class="button primary inline"
+                       href="assets/wqy-unicode.lff"
+                       download="wqy-unicode.lff">@L.Get("fontGuide.download")</a>
+
+                    <h3>@L.Get("fontGuide.platform")</h3>
+                    <ol>
+                        <li>@L.Get("fontGuide.step1")</li>
+                        <li>@L.Get("fontGuide.step2")</li>
+                        <li>@L.Get("fontGuide.step3")</li>
+                        <li>@L.Get("fontGuide.step4")</li>
+                    </ol>
+
+                    <p class="small">
+                        @L.Get("fontGuide.windowsPath")
+                        <code>C:\Program Files\LibreCAD\resources\fonts</code>
+                        /
+                        <code>C:\Program Files\LibreCAD\share\librecad\fonts</code>
+                        <br />
+                        @L.Get("fontGuide.macPath")
+                    </p>
+
+                    <div class="notice-box">@L.Get("fontGuide.license")</div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private const string WindowsReleasesUrl = "https://github.com/Bak2ya/DWGtoDXF/releases";
+    private const string SourceCodeUrl = "https://github.com/Bak2ya/DWGtoDXF";
+
+    private readonly List<QueuedDwgFile> _files = [];
+    private readonly List<ConversionResult> _results = [];
+    private readonly List<string> _logs = [];
+    private readonly ConversionOptions _options = new();
+
+    private bool _isConverting;
+    private bool _menuOpen;
+    private bool _darkMode;
+    private int _progress;
+    private string _activityMessage = "";
+    private DialogType _dialog;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        var preferredLanguage = await JS.InvokeAsync<string>("dwg2dxf.getLanguage");
+        L.SetLanguage(preferredLanguage);
+        SetRecommendedFontModeForLanguage();
+
+        _darkMode = await JS.InvokeAsync<bool>("dwg2dxf.getDarkMode");
+        _activityMessage = L.Get("status.waiting");
+
+        await JS.InvokeVoidAsync(
+            "dwg2dxf.setLanguage",
+            L.CurrentCode,
+            L.Get("meta.description"));
+
+        StateHasChanged();
+    }
+
+    private async Task ChangeLanguage(ChangeEventArgs e)
+    {
+        var code = e.Value?.ToString();
+        L.SetLanguage(code);
+        SetRecommendedFontModeForLanguage();
+
+        await JS.InvokeVoidAsync(
+            "dwg2dxf.setLanguage",
+            L.CurrentCode,
+            L.Get("meta.description"));
+
+        _activityMessage = L.Get("status.waiting");
+        StateHasChanged();
+    }
+
+    private async Task AddFiles(InputFileChangeEventArgs e)
+    {
+        foreach (var browserFile in e.GetMultipleFiles(100))
+        {
+            if (_files.Any(f =>
+                    f.Name.Equals(browserFile.Name, StringComparison.OrdinalIgnoreCase) &&
+                    f.Size == browserFile.Size))
+            {
+                continue;
+            }
+
+            var item = new QueuedDwgFile
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Name = browserFile.Name,
+                Size = browserFile.Size,
+                BrowserFile = browserFile,
+                StatusKey = "status.checking"
+            };
+
+            _files.Add(item);
+            StateHasChanged();
+
+            try
+            {
+                var check = await Converter.ValidateBrowserFileAsync(browserFile);
+
+                item.Header = check.Header;
+                item.ValidationErrorKey = check.ErrorKey;
+                item.ValidationErrorArgs = check.ErrorArgs ?? Array.Empty<object>();
+                item.StatusKey = check.ErrorKey is null ? "status.ready" : "status.error";
+            }
+            catch (Exception ex)
+            {
+                item.ValidationErrorKey = "validation.checkFailed";
+                item.ValidationErrorArgs = new object[] { ex.Message };
+                item.StatusKey = "status.error";
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task ConvertAll()
+    {
+        var targets = _files
+            .Where(f => f.ValidationErrorKey is null)
+            .ToList();
+
+        if (targets.Count == 0)
+            return;
+
+        _isConverting = true;
+        _progress = 0;
+        _activityMessage = L.Get("progress.preparing");
+        _results.Clear();
+        _logs.Clear();
+
+        AddLog(L.Get("log.start"));
+        StateHasChanged();
+        await Task.Delay(16);
+
+        for (var i = 0; i < targets.Count; i++)
+        {
+            var file = targets[i];
+            file.StatusKey = "progress.loading";
+            _activityMessage = $"{file.Name} · {L.Get("progress.loading")}";
+            _progress = (int)Math.Round(i * 100d / targets.Count);
+
+            AddLog($"[{i + 1}/{targets.Count}] {file.Name}");
+            StateHasChanged();
+            await Task.Delay(16);
+
+            try
+            {
+                var currentIndex = i;
+
+                var result = await Converter.ConvertAsync(
+                    file.BrowserFile,
+                    _options,
+                    message => AddLog("  " + message),
+                    (fileProgress, stageKey) =>
+                    {
+                        file.StatusKey = stageKey;
+                        _activityMessage = $"{file.Name} · {L.Get(stageKey)}";
+                        _progress = (int)Math.Round(
+                            (currentIndex * 100d + fileProgress) / targets.Count);
+
+                        _ = InvokeAsync(StateHasChanged);
+                    });
+
+                _results.Add(result);
+                file.StatusKey = result.NeedsReview ? "status.review" : "status.done";
+
+                AddLog(result.NeedsReview
+                    ? "  ! " + L.T(
+                        "log.resultReview",
+                        result.OutputName,
+                        string.Join(", ", result.Differences))
+                    : "  ✓ " + L.T(
+                        "log.resultOk",
+                        result.OutputName,
+                        result.After.Total,
+                        result.After.Layers,
+                        result.After.Text));
+            }
+            catch (Exception ex)
+            {
+                file.StatusKey = "status.failed";
+                AddLog("  ✕ " + L.T("log.failure", ex.Message));
+            }
+
+            _progress = (int)Math.Round((i + 1) * 100d / targets.Count);
+            StateHasChanged();
+            await Task.Delay(16);
+        }
+
+        AddLog(L.T(
+            "log.summary",
+            _results.Count(r => !r.NeedsReview),
+            _results.Count(r => r.NeedsReview),
+            targets.Count - _results.Count));
+
+        _progress = 100;
+        _activityMessage = L.Get("progress.done");
+        _isConverting = false;
+        StateHasChanged();
+    }
+
+    private string? GetValidationError(QueuedDwgFile file)
+    {
+        if (file.ValidationErrorKey is null)
+            return null;
+
+        return L.T(file.ValidationErrorKey, file.ValidationErrorArgs);
+    }
+
+    private void AddLog(string text)
+    {
+        _logs.Add(text);
+
+        if (_logs.Count > 250)
+            _logs.RemoveAt(0);
+
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private async Task DownloadResult(ConversionResult result)
+    {
+        using var stream = new MemoryStream(result.DxfBytes, writable: false);
+        using var reference = new DotNetStreamReference(stream);
+
+        await JS.InvokeVoidAsync(
+            "dwg2dxf.downloadStream",
+            result.OutputName,
+            reference);
+    }
+
+    private async Task DownloadAll()
+    {
+        if (_results.Count == 0)
+            return;
+
+        var bytes = CadConversionService.CreateZip(_results);
+
+        using var stream = new MemoryStream(bytes, writable: false);
+        using var reference = new DotNetStreamReference(stream);
+
+        await JS.InvokeVoidAsync(
+            "dwg2dxf.downloadStream",
+            "DWG2DXF_results.zip",
+            reference);
+    }
+
+    private void RemoveFile(string id)
+    {
+        _files.RemoveAll(f => f.Id == id);
+        _results.Clear();
+        _progress = 0;
+    }
+
+    private void RemoveInvalid() =>
+        _files.RemoveAll(f => f.ValidationErrorKey is not null);
+
+    private void ClearFiles()
+    {
+        _files.Clear();
+        _results.Clear();
+        _logs.Clear();
+        _progress = 0;
+    }
+
+    private void SetFontMode(FontMode mode) =>
+        _options.FontMode = mode;
+
+    private void SetRecommendedFontModeForLanguage()
+    {
+        _options.FontMode = L.CurrentCode is "ko" or "ja"
+            ? FontMode.All
+            : FontMode.None;
+    }
+
+    private bool IsRecommendedFontMode(FontMode mode) =>
+        L.CurrentCode is "ko" or "ja"
+            ? mode == FontMode.All
+            : mode == FontMode.None;
+
+    private void ToggleMenu() =>
+        _menuOpen = !_menuOpen;
+
+    private void CloseMenu() =>
+        _menuOpen = false;
+
+    private void OpenDialog(DialogType type)
+    {
+        _dialog = type;
+        _menuOpen = false;
+    }
+
+    private void CloseDialog() =>
+        _dialog = DialogType.None;
+
+    private async Task ToggleDarkMode()
+    {
+        _darkMode = !_darkMode;
+        _menuOpen = false;
+
+        await JS.InvokeVoidAsync(
+            "dwg2dxf.setDarkMode",
+            _darkMode);
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes >= 1024L * 1024 * 1024)
+            return $"{bytes / (1024d * 1024 * 1024):0.##} GB";
+
+        if (bytes >= 1024L * 1024)
+            return $"{bytes / (1024d * 1024):0.##} MB";
+
+        if (bytes >= 1024)
+            return $"{bytes / 1024d:0.##} KB";
+
+        return $"{bytes} B";
+    }
+
+    private enum DialogType
+    {
+        None,
+        About,
+        Font
+    }
+}

@@ -1,0 +1,16 @@
+﻿wqy-unicode.lff 고지
+===================
+
+이 빌드키트에는 LibreCAD에서 한글/CJK 표시를 위해 사용하는 wqy-unicode.lff가
+src\payload\resources\wqy-unicode.lff 경로에 직접 포함되어 있습니다.
+빌드 과정에서 SourceForge에서 다시 다운로드하지 않습니다.
+
+파일 자체의 헤더에 명시된 라이선스:
+- Font: wqy-unicode.lff (WenQuanYi Micro Hei Mono Light)
+- License: Apache License 2.0 or GPLv3
+
+DWG2DXF 빌드/배포에서는 듀얼 라이선스 중 Apache License 2.0 조건을 사용합니다.
+Apache License 2.0 전문은 같은 폴더의 Apache-2.0.txt를 확인하십시오.
+
+Reference:
+https://sourceforge.net/projects/librecad/files/Resources/fonts/
