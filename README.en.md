@@ -35,7 +35,7 @@ The Windows desktop build is distributed through GitHub Releases.
 - 日本語
 - Español
 
-The web app detects the browser language on first launch. The **Language** control is always visible in the header, and your manual selection is saved in the browser.
+The web app detects the browser language on first launch. Language is available under **More → Language**, and your manual selection is saved in the browser.
 
 The interface language does **not** control font conversion. A drawing may contain Korean, Japanese, Chinese, or other text regardless of the language used for the UI.
 
@@ -58,7 +58,8 @@ The interface language does **not** control font conversion. A drawing may conta
 - Progress stages and activity animation during long conversions
 - Individual DXF downloads
 - Download all converted files as ZIP
-- Dark mode
+- **Open in PieniPlan**: pass a DXF to CAD editing or reference-drawing import in the same browser (requires PieniPlan Build75+ receiver)
+- Appearance: System / Light / Dark
 - LibreCAD `wqy-unicode.lff` download and installation guide
 - Original DWG files are never modified
 
@@ -73,7 +74,7 @@ DWG2DXF can point text styles to `wqy-unicode.lff`. The CJK-only mode detects co
 - Katakana
 - CJK Unified Ideographs / common Han characters
 
-CJK means **Chinese, Japanese, and Korean** characters. This explanation is always visible next to the font options.
+CJK means **Chinese, Japanese, and Korean** characters. You can find this explanation in the conversion settings.
 
 For maximum compatibility when CJK text is actually garbled, **Replace all text** remains the most reliable mode. If text already displays correctly, no font conversion is necessary.
 
@@ -84,6 +85,12 @@ After conversion, DWG2DXF re-opens the generated DXF and compares major object c
 If a difference is detected, the conversion result is marked **Review**. This does not automatically mean the drawing is damaged. It means the result should be visually checked in LibreCAD.
 
 Proxy, AEC, Civil, XREF-related, and other special CAD objects are not guaranteed to convert perfectly.
+
+## Open in PieniPlan
+
+Select **Open in PieniPlan** on a converted DXF to store a temporary copy in the same browser’s IndexedDB and open [PieniPlan](https://bak2ya.github.io/PieniPlan/) in another tab. Choose **CAD editing** or **add as a reference drawing** there. The temporary copy is cleared after a successful import and expires after 30 minutes.
+
+No drawing data is uploaded to a server, but other pages on the same origin (`https://bak2ya.github.io`) can access this browser storage. Consider this before handling sensitive institutional drawings. DXF and ZIP downloads remain available.
 
 ## LibreCAD font installation
 

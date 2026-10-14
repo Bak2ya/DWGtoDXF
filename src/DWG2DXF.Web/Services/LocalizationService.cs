@@ -57,6 +57,27 @@ public sealed class LocalizationService
 
     private static Dictionary<string, string> En() => new(StringComparer.Ordinal)
     {
+        ["workspace.subtitle"] = "Convert DWG drawings to DXF.",
+        ["drop.privacy"] = "Files are processed in this browser, not uploaded to a server.",
+        ["files.count"] = "Files ({0})",
+        ["options.heading"] = "Conversion settings",
+        ["options.change"] = "Change",
+        ["options.collapse"] = "Close",
+        ["options.summary2010"] = "AutoCAD 2010",
+        ["options.summaryOriginal"] = "Original version",
+        ["theme.label"] = "Appearance",
+        ["theme.system"] = "System",
+        ["theme.light"] = "Light",
+        ["theme.dark"] = "Dark",
+        ["log.details"] = "Conversion details",
+        ["handoff.open"] = "Open in PieniPlan",
+        ["handoff.sending"] = "Opening…",
+        ["handoff.privacy"] = "In PieniPlan, choose CAD editing or reference drawing. The temporary DXF stays in your browser, accessible to other pages on this site.",
+        ["handoff.popupBlocked"] = "Allow pop-ups for this site and try again. DXF download remains available.",
+        ["handoff.quota"] = "Browser storage is full. Download the DXF instead, or free up browser storage.",
+        ["handoff.invalid"] = "This DXF cannot be sent directly. Download the DXF and open it in PieniPlan.",
+        ["handoff.failed"] = "Could not open PieniPlan. You can still download the DXF and import it manually.",
+
         ["meta.description"] = "Convert DWG files to DXF locally in your browser.",
 
         ["language.label"] = "Language",
@@ -108,7 +129,7 @@ public sealed class LocalizationService
         ["results.downloadDxf"] = "Download DXF",
 
         ["footer.original"] = "Original DWG files are never modified.",
-        ["footer.download"] = "Results are saved only through browser downloads.",
+        ["footer.download"] = "Download results or open them in PieniPlan without uploading.",
 
         ["about.title"] = "DWG2DXF Web",
         ["about.intro"] = "A small preprocessing tool that converts DWG files to DXF so they can be reviewed and edited in LibreCAD without requiring AutoCAD.",
@@ -120,7 +141,7 @@ public sealed class LocalizationService
         ["about.step5"] = "Open the result in LibreCAD and visually confirm the drawing.",
         ["about.notice"] = "This is not a CAD editor. Proxy/AEC/Civil and other special objects are not guaranteed to convert perfectly, and object-count validation does not prove mathematical equivalence.",
         ["about.platforms"] = "Use this web version on macOS, Windows, or Linux. A Windows desktop build is also available from GitHub Releases.",
-        ["about.version"] = "Web v0.4.2 · ACadSharp 3.6.51",
+        ["about.version"] = "Web v0.5.0 · ACadSharp 3.6.51",
 
         ["fontGuide.title"] = "LibreCAD font installation",
         ["fontGuide.intro"] = "Browsers cannot open the LibreCAD installation folder directly. Download the font below and copy it to LibreCAD's font folder.",
@@ -188,6 +209,27 @@ public sealed class LocalizationService
 
     private static Dictionary<string, string> Ko() => new(StringComparer.Ordinal)
     {
+        ["workspace.subtitle"] = "DWG 도면을 DXF로 변환합니다.",
+        ["drop.privacy"] = "파일은 서버에 업로드되지 않고 이 브라우저에서만 처리됩니다.",
+        ["files.count"] = "파일 {0}개",
+        ["options.heading"] = "변환 설정",
+        ["options.change"] = "변경",
+        ["options.collapse"] = "접기",
+        ["options.summary2010"] = "AutoCAD 2010",
+        ["options.summaryOriginal"] = "원본 버전",
+        ["theme.label"] = "화면 모드",
+        ["theme.system"] = "시스템",
+        ["theme.light"] = "라이트",
+        ["theme.dark"] = "다크",
+        ["log.details"] = "상세 기록",
+        ["handoff.open"] = "PieniPlan에서 열기",
+        ["handoff.sending"] = "여는 중…",
+        ["handoff.privacy"] = "PieniPlan에서 CAD 편집 또는 참조 도면을 선택할 수 있습니다. 서버 전송 없이 브라우저에 저장하는 임시 사본은 같은 사이트의 다른 페이지에서도 접근할 수 있습니다.",
+        ["handoff.popupBlocked"] = "새 탭이 차단되었습니다. 이 사이트의 팝업을 허용한 뒤 다시 시도하세요. DXF 다운로드는 계속 사용할 수 있습니다.",
+        ["handoff.quota"] = "브라우저 저장 공간이 부족합니다. DXF를 다운로드하거나 브라우저 저장 공간을 확보해 주세요.",
+        ["handoff.invalid"] = "이 DXF는 직접 전달할 수 없습니다. 다운로드한 뒤 PieniPlan에서 열어 주세요.",
+        ["handoff.failed"] = "PieniPlan을 열지 못했습니다. DXF 다운로드 후 직접 불러올 수 있습니다.",
+
         ["meta.description"] = "DWG 파일을 서버 업로드 없이 브라우저에서 로컬로 DXF로 변환합니다.",
 
         ["language.label"] = "언어",
@@ -239,7 +281,7 @@ public sealed class LocalizationService
         ["results.downloadDxf"] = "DXF 다운로드",
 
         ["footer.original"] = "원본 DWG는 수정하지 않습니다.",
-        ["footer.download"] = "결과 파일은 브라우저 다운로드로만 저장됩니다.",
+        ["footer.download"] = "결과는 브라우저에서 다운로드하거나 PieniPlan으로 전달할 수 있습니다.",
 
         ["about.title"] = "DWG2DXF Web",
         ["about.intro"] = "AutoCAD 없이 DWG를 DXF로 변환해 LibreCAD에서 확인·수정할 수 있도록 만든 작은 전처리 도구입니다.",
@@ -251,7 +293,7 @@ public sealed class LocalizationService
         ["about.step5"] = "LibreCAD에서 결과 도면을 열어 실제 형상을 최종 확인합니다.",
         ["about.notice"] = "이 도구는 CAD 편집기가 아닙니다. Proxy/AEC/Civil 등 특수 객체는 완벽한 변환을 보장하지 않으며, 객체 수 검증도 수학적 동일성을 증명하는 기능은 아닙니다.",
         ["about.platforms"] = "웹 버전은 macOS, Windows, Linux에서 사용할 수 있습니다. Windows 데스크톱 버전은 GitHub Releases에서도 받을 수 있습니다.",
-        ["about.version"] = "Web v0.4.2 · ACadSharp 3.6.51",
+        ["about.version"] = "Web v0.5.0 · ACadSharp 3.6.51",
 
         ["fontGuide.title"] = "LibreCAD 글꼴 설치 안내",
         ["fontGuide.intro"] = "브라우저는 보안상 LibreCAD 설치 폴더를 직접 열 수 없습니다. 아래 글꼴 파일을 받은 뒤 LibreCAD 글꼴 폴더에 직접 복사하세요.",
@@ -319,6 +361,27 @@ public sealed class LocalizationService
 
     private static Dictionary<string, string> Ja() => new(StringComparer.Ordinal)
     {
+        ["workspace.subtitle"] = "DWG図面をDXFに変換します。",
+        ["drop.privacy"] = "ファイルはサーバーに送信されず、このブラウザー内で処理されます。",
+        ["files.count"] = "ファイル {0} 件",
+        ["options.heading"] = "変換設定",
+        ["options.change"] = "変更",
+        ["options.collapse"] = "閉じる",
+        ["options.summary2010"] = "AutoCAD 2010",
+        ["options.summaryOriginal"] = "元のバージョン",
+        ["theme.label"] = "表示モード",
+        ["theme.system"] = "システム",
+        ["theme.light"] = "ライト",
+        ["theme.dark"] = "ダーク",
+        ["log.details"] = "詳細ログ",
+        ["handoff.open"] = "PieniPlanで開く",
+        ["handoff.sending"] = "開いています…",
+        ["handoff.privacy"] = "PieniPlanでCAD編集または参照図面を選べます。データはサーバーに送られず、一時コピーは同一サイトの他のページからもアクセス可能です。",
+        ["handoff.popupBlocked"] = "新しいタブがブロックされました。ポップアップを許可して再試行してください。DXFのダウンロードは利用できます。",
+        ["handoff.quota"] = "ブラウザーの保存容量が不足しています。DXFをダウンロードするか空き容量を増やしてください。",
+        ["handoff.invalid"] = "このDXFは直接送信できません。ダウンロードしてPieniPlanで開いてください。",
+        ["handoff.failed"] = "PieniPlanを開けませんでした。DXFをダウンロードして手動で読み込めます。",
+
         ["meta.description"] = "DWGファイルをサーバーへ送信せず、ブラウザ内でDXFに変換します。",
 
         ["language.label"] = "言語",
@@ -370,7 +433,7 @@ public sealed class LocalizationService
         ["results.downloadDxf"] = "DXFをダウンロード",
 
         ["footer.original"] = "元のDWGファイルは変更しません。",
-        ["footer.download"] = "結果はブラウザのダウンロード機能でのみ保存されます。",
+        ["footer.download"] = "結果をダウンロードするかPieniPlanで開けます。",
 
         ["about.title"] = "DWG2DXF Web",
         ["about.intro"] = "AutoCADを必要とせず、DWGをDXFへ変換してLibreCADで確認・編集するための小さな前処理ツールです。",
@@ -382,7 +445,7 @@ public sealed class LocalizationService
         ["about.step5"] = "LibreCADで結果を開き、図面を目視で最終確認します。",
         ["about.notice"] = "このツールはCADエディターではありません。Proxy/AEC/Civilなどの特殊オブジェクトは完全な変換を保証できず、オブジェクト数の検証も数学的な同一性を証明するものではありません。",
         ["about.platforms"] = "Web版はmacOS、Windows、Linuxで利用できます。Windowsデスクトップ版はGitHub Releasesからも入手できます。",
-        ["about.version"] = "Web v0.4.2 · ACadSharp 3.6.51",
+        ["about.version"] = "Web v0.5.0 · ACadSharp 3.6.51",
 
         ["fontGuide.title"] = "LibreCAD フォント設定",
         ["fontGuide.intro"] = "ブラウザからLibreCADのインストールフォルダを直接開くことはできません。下のフォントをダウンロードし、LibreCADのフォントフォルダへコピーしてください。",
@@ -450,6 +513,27 @@ public sealed class LocalizationService
 
     private static Dictionary<string, string> Es() => new(StringComparer.Ordinal)
     {
+        ["workspace.subtitle"] = "Convierte dibujos DWG a DXF.",
+        ["drop.privacy"] = "Los archivos se procesan en este navegador, sin subirse a ningún servidor.",
+        ["files.count"] = "Archivos ({0})",
+        ["options.heading"] = "Opciones de conversión",
+        ["options.change"] = "Cambiar",
+        ["options.collapse"] = "Cerrar",
+        ["options.summary2010"] = "AutoCAD 2010",
+        ["options.summaryOriginal"] = "Versión original",
+        ["theme.label"] = "Apariencia",
+        ["theme.system"] = "Sistema",
+        ["theme.light"] = "Claro",
+        ["theme.dark"] = "Oscuro",
+        ["log.details"] = "Detalles de conversión",
+        ["handoff.open"] = "Abrir en PieniPlan",
+        ["handoff.sending"] = "Abriendo…",
+        ["handoff.privacy"] = "En PieniPlan puedes elegir editar el CAD o usarlo como referencia. No se envía al servidor; una copia temporal es accesible desde otras páginas del mismo sitio.",
+        ["handoff.popupBlocked"] = "Se bloqueó la nueva pestaña. Permite las ventanas emergentes e inténtalo de nuevo. La descarga DXF sigue disponible.",
+        ["handoff.quota"] = "No hay suficiente espacio en el navegador. Descarga el DXF o libera espacio.",
+        ["handoff.invalid"] = "No se puede transferir este DXF. Descárgalo y ábrelo en PieniPlan.",
+        ["handoff.failed"] = "No se pudo abrir PieniPlan. Puedes descargar el DXF e importarlo manualmente.",
+
         ["meta.description"] = "Convierte archivos DWG a DXF localmente en el navegador, sin subirlos a un servidor.",
 
         ["language.label"] = "Idioma",
@@ -501,7 +585,7 @@ public sealed class LocalizationService
         ["results.downloadDxf"] = "Descargar DXF",
 
         ["footer.original"] = "Los archivos DWG originales nunca se modifican.",
-        ["footer.download"] = "Los resultados solo se guardan mediante descargas del navegador.",
+        ["footer.download"] = "Descarga los resultados o ábrelos en PieniPlan.",
 
         ["about.title"] = "DWG2DXF Web",
         ["about.intro"] = "Una pequeña herramienta de preprocesamiento que convierte archivos DWG a DXF para revisarlos y editarlos en LibreCAD sin necesitar AutoCAD.",
@@ -513,7 +597,7 @@ public sealed class LocalizationService
         ["about.step5"] = "Abre el resultado en LibreCAD y comprueba visualmente el dibujo.",
         ["about.notice"] = "Esta herramienta no es un editor CAD. No se garantiza la conversión perfecta de objetos especiales como Proxy/AEC/Civil, y la comparación del número de objetos no demuestra una equivalencia matemática.",
         ["about.platforms"] = "La versión web funciona en macOS, Windows y Linux. También hay una versión de escritorio para Windows en GitHub Releases.",
-        ["about.version"] = "Web v0.4.2 · ACadSharp 3.6.51",
+        ["about.version"] = "Web v0.5.0 · ACadSharp 3.6.51",
 
         ["fontGuide.title"] = "Instalación de fuentes en LibreCAD",
         ["fontGuide.intro"] = "El navegador no puede abrir directamente la carpeta de instalación de LibreCAD. Descarga la fuente y cópiala manualmente a la carpeta de fuentes de LibreCAD.",
